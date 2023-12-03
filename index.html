@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloud Clipboard</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <style>
+      .container {
+        max-width: 900px;
+      }
+      img {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container my-5">
+      <div id="cloud" class="bg-success-subtle rounded p-4 my-4">
+        <h3 class="mb-3">Cloud</h3>
+        <div id="cloudData"></div>
+      </div>
+      <div id="local" class="bg-body-secondary rounded p-4 my-4">
+        <h3 class="mb-3">Local</h3>
+        <div id="localData" class="text-center"></div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      async function readClipboard() {
+        const permission = await navigator.permissions.query({
+          name: 'clipboard-read',
+        });
+        if (permission.state === 'denied') {
+          return [null, 'No read permission for clipboard'];
+        }
+
+        const items = await navigator.clipboard.read();
+        if (items.length == 0) {
+          return [null, 'Clipboard empty'];
+        }
+
+        const item = items[0];
+        if (item.types.includes('image/png')) {
+          const blob = await item.getType('image/png');
+          return ['image', blob];
+        } else if (item.types.includes('text/plain')) {
+          const blob = await item.getType('text/plain');
+          const text = await blob.text();
+          return ['text', text];
+        } else {
+          return [null, 'Unknown clipboard MIME type'];
+        }
+      }
+
+      async function writeTextToClipboard(text) {
+        const type = 'text/plain';
+        const blob = new Blob([text], { type });
+        const data = [new ClipboardItem({ type: blob })];
+        await navigator.clipboard.write(data);
+      }
+
+      async function writeImageToClipboard(blob) {
+        const data = [new ClipboardItem({ 'image/png': blob })];
+        await navigator.clipboard.write(data);
+      }
+
+      window.addEventListener('DOMContentLoaded', async () => {
+        const localData = document.querySelector('#localData');
+        const [type, data] = await readClipboard();
+        if (type === 'image') {
+          const image = new Image();
+          image.src = URL.createObjectURL(data);
+          localData.appendChild(image);
+        } else if (type == 'text') {
+          const node = document.createElement('textarea');
+          node.value = data;
+          node.classList.add('form-control');
+          node.rows = 5;
+          localData.appendChild(node);
+        } else {
+          const node = document.createElement('p');
+          node.innerText = data;
+          node.style.color = 'red';
+          localData.appendChild(node);
+        }
+      });
+    </script>
+  </body>
+</html>
