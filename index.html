@@ -11,6 +11,10 @@
       integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
       crossorigin="anonymous"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css"
+    />
     <style>
       .container {
         max-width: 900px;
@@ -29,6 +33,18 @@
         <h3 class="mb-3">Cloud</h3>
         <div id="cloudData"></div>
       </div>
+
+      <div class="text-center">
+        <div class="btn-group btn-group-lg my-2">
+          <button type="button" class="btn btn-outline-secondary">
+            <i class="bi-cloud-upload"></i> Push to cloud
+          </button>
+          <button type="button" class="btn btn-outline-success">
+            <i class="bi-cloud-download"></i> Pull to local
+          </button>
+        </div>
+      </div>
+
       <div id="local" class="bg-body-secondary rounded p-4 my-4">
         <h3 class="mb-3">Local</h3>
         <div id="localData" class="text-center"></div>
@@ -40,6 +56,7 @@
       integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
       crossorigin="anonymous"
     ></script>
+
     <script>
       async function readClipboard() {
         const permission = await navigator.permissions.query({
@@ -79,25 +96,41 @@
         await navigator.clipboard.write(data);
       }
 
-      window.addEventListener('DOMContentLoaded', async () => {
-        const localData = document.querySelector('#localData');
-        const [type, data] = await readClipboard();
+      async function fetchCloudData() {
+        // const response = await fetch(
+        //   'https://clipboard.yusanshi.com/data/image.png'
+        // );
+        // const blob = await response.blob();
+        // return ['image', blob];
+        return ['text', 'pnfse\nfefe\n  fe'];
+      }
+
+      function show(type, data, container) {
         if (type === 'image') {
           const image = new Image();
           image.src = URL.createObjectURL(data);
-          localData.appendChild(image);
+          container.appendChild(image);
         } else if (type == 'text') {
           const node = document.createElement('textarea');
           node.value = data;
           node.classList.add('form-control');
           node.rows = 5;
-          localData.appendChild(node);
+          container.appendChild(node);
         } else {
           const node = document.createElement('p');
           node.innerText = data;
           node.style.color = 'red';
-          localData.appendChild(node);
+          container.appendChild(node);
         }
+      }
+
+      window.addEventListener('DOMContentLoaded', async () => {
+        const [localType, localData] = await readClipboard();
+        const localDataContainer = document.querySelector('#localData');
+        show(localType, localData, localDataContainer);
+        const [cloudType, cloudData] = await fetchCloudData();
+        const cloudDataContainer = document.querySelector('#cloudData');
+        show(cloudType, cloudData, cloudDataContainer);
       });
     </script>
   </body>
