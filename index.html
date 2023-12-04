@@ -248,6 +248,7 @@
       }
 
       async function pushToCloud() {
+        getAndShowLocalClipboard();
         cloud = local;
         const { type, data } = cloud;
         log('Begin pushing to cloud');
