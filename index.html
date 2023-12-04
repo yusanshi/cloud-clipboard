@@ -144,7 +144,7 @@
           };
         }
 
-        if (items.length == 0) {
+        if (items.length === 0) {
           return {
             type: null,
             data: 'Clipboard empty',
@@ -199,15 +199,16 @@
 
         text = await text;
         image = await image;
-
         if (text !== null && image === null) {
-			    return {type:'text',data:text}; 
-         } else if (text === null && image !== null) {
-			     return {type:'image',data:image};
-         } else {
-			     return {type:null,data:'Error data'}
-         }
-
+          return { type: 'text', data: text };
+        } else if (text === null && image !== null) {
+          return { type: 'image', data: image };
+        } else {
+          return {
+            type: null,
+            data: 'Error data from cloud. Check the console for details',
+          };
+        }
       }
 
       function showClipboard({ type, data }, container) {
