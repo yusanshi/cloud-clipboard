@@ -21,6 +21,7 @@
       }
       img {
         max-width: 100%;
+        max-height: 400px;
         border: 1px solid #ddd;
         border-radius: 5px;
       }
@@ -288,19 +289,29 @@
       }
 
       async function pullToLocal() {
+        // Must be commented out: Safari does not allow this :)
+        // https://stackoverflow.com/questions/66496294/clipboard-api-used-in-conjunction-with-axios-in-click-event
+        // await getAndShowCloudClipboard();
         local = cloud;
         const { type, data } = local;
         log('Begin pulling to local');
-        if (type === 'image') {
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': data }),
-          ]);
-        } else if (type === 'text') {
-          const blob = new Blob([data], { type: 'text/plain' });
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'text/plain': blob }),
-          ]);
-        } else {
+        try {
+          if (type === 'image') {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': data }),
+            ]);
+          } else if (type === 'text') {
+            const blob = new Blob([data], { type: 'text/plain' });
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'text/plain': blob }),
+            ]);
+          } else {
+            log(`Failed to pull to local: unknown type ${type}`);
+            return;
+          }
+        } catch (e) {
+          log(`Failed to pull to local: ${e.message}, ${e.stack}`);
+          return;
         }
         log('Finish pulling to local');
         showClipboard(local, localContainer);
