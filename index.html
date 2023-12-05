@@ -272,9 +272,9 @@
       }
 
       async function pushToCloud() {
+        log('Begin pushing to cloud');
         await getAndShowLocalClipboard();
         const { type, data } = local;
-        log('Begin pushing to cloud');
         try {
           if (type === 'image') {
             await Promise.all([
@@ -308,38 +308,63 @@
           log(`Failed to push to cloud: ${e.message}, ${e.stack}`);
           return;
         }
-        log('Finish pushing to cloud');
         cloud = local;
         showClipboard(cloud, cloudContainer);
+        log('Finish pushing to cloud');
       }
 
-      async function pullToLocal() {
-        // Must be commented out: Safari does not allow this :)
+      function pullToLocal() {
+        // Use this weird chaining because of Safari need this :)
+        // https://stackoverflow.com/questions/66312944/javascript-clipboard-api-write-does-not-work-in-safari
         // https://stackoverflow.com/questions/66496294/clipboard-api-used-in-conjunction-with-axios-in-click-event
-        // await getAndShowCloudClipboard();
-        const { type, data } = cloud;
         log('Begin pulling to local');
-        try {
+        let type;
+        let data;
+        const getBlob = (async () => {
+          await getAndShowCloudClipboard();
+          ({ type, data } = cloud);
           if (type === 'image') {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': data }),
-            ]);
           } else if (type === 'text') {
-            const blob = new Blob([data], { type: 'text/plain' });
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'text/plain': blob }),
-            ]);
+            data = new Blob([data], { type: 'text/plain' });
           } else {
             log(`Failed to pull to local: unknown type ${type}`);
-            return;
           }
-        } catch (e) {
-          log(`Failed to pull to local: ${e.message}, ${e.stack}`);
-          return;
-        }
-        log('Finish pulling to local');
-        local = cloud;
-        showClipboard(local, localContainer);
+        })();
+
+        const finish = () => {
+          local = cloud;
+          showClipboard(local, localContainer);
+          log('Finish pulling to local');
+        };
+        navigator.clipboard
+          .write([
+            new ClipboardItem({
+              'image/png': new Promise(async (resolve, reject) => {
+                await getBlob;
+                if (type === 'image') {
+                  resolve(data);
+                } else {
+                  reject();
+                }
+              }),
+            }),
+          ])
+          .then(finish);
+
+        navigator.clipboard
+          .write([
+            new ClipboardItem({
+              'text/plain': new Promise(async (resolve, reject) => {
+                await getBlob;
+                if (type === 'text') {
+                  resolve(data);
+                } else {
+                  reject();
+                }
+              }),
+            }),
+          ])
+          .then(finish);
       }
 
       window.addEventListener('DOMContentLoaded', async () => {
