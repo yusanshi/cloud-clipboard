@@ -35,14 +35,7 @@
     <div class="container my-md-5">
       <div class="bg-primary-subtle rounded p-4 my-4">
         <div class="mb-3">
-          <h3 class="d-inline align-middle">Cloud</h3>
-          <button
-            type="button"
-            class="btn btn-outline-primary m-2 align-middle"
-            onclick="getAndShowCloudClipboard()"
-          >
-            Retry/Refresh
-          </button>
+          <h3>Cloud</h3>
         </div>
         <div id="cloud" class="text-center"></div>
       </div>
@@ -105,20 +98,21 @@
       </div>
 
       <div class="mb-2">
-        <label
-          for="redis"
-          class="form-label text-decoration-underline"
-          data-bs-toggle="collapse"
-          href="#redisCollapse"
-          role="button"
-          aria-expanded="false"
-          aria-controls="redisCollapse"
-          >View/edit Redis info (<a
-            target="_blank"
-            href="https://github.com/nicolasff/webdis"
+        <label for="redis" class="form-label"
+          ><span
+            class="text-decoration-underline"
+            data-bs-toggle="collapse"
+            href="#redisCollapse"
+            role="button"
+            aria-expanded="false"
+            aria-controls="redisCollapse"
+          >
+            View/edit Redis info</span
+          >
+          (<a target="_blank" href="https://github.com/nicolasff/webdis"
             >webdis</a
-          >)</label
-        >
+          >)
+        </label>
         <div class="collapse" id="redisCollapse">
           <textarea
             class="form-control"
@@ -266,9 +260,31 @@
         local = await readClipboard();
         showClipboard(local, localContainer);
       }
+
+      async function sha1Blob(blob) {
+        // https://stackoverflow.com/questions/21761453/create-sha-256-hash-from-a-blob-file-in-javascript
+        const uint8Array = new Uint8Array(await blob.arrayBuffer());
+        const hashBuffer = await crypto.subtle.digest('SHA-1', uint8Array);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map((h) => h.toString(16).padStart(2, '0')).join('');
+      }
+
       async function getAndShowCloudClipboard() {
+        let stringify = async (e) => {
+          if (e === undefined) {
+            return 'undefined';
+          }
+          if (e.data instanceof Blob) {
+            return JSON.stringify(e) + (await sha1Blob(e.data));
+          }
+          return JSON.stringify(e);
+        };
+        const previous = await stringify(cloud);
         cloud = await fetchCloudData();
-        showClipboard(cloud, cloudContainer);
+        const current = await stringify(cloud);
+        if (current != previous) {
+          showClipboard(cloud, cloudContainer);
+        }
       }
 
       async function pushToCloud() {
@@ -314,9 +330,6 @@
       }
 
       async function pullToLocal() {
-        // Must be commented out: Safari does not allow this :)
-        // https://stackoverflow.com/questions/66496294/clipboard-api-used-in-conjunction-with-axios-in-click-event
-        // await getAndShowCloudClipboard();
         const { type, data } = cloud;
         log('Begin pulling to local');
         try {
@@ -365,7 +378,10 @@
         });
 
         getAndShowLocalClipboard();
-        getAndShowCloudClipboard();
+        while (true) {
+          await getAndShowCloudClipboard();
+          await new Promise((r) => setTimeout(r, 500));
+        }
       });
     </script>
   </body>
