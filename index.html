@@ -25,11 +25,14 @@
         border: 1px solid #ddd;
         border-radius: 5px;
       }
+      .collapsing {
+        transition: height 0.25s ease;
+      }
     </style>
   </head>
 
   <body>
-    <div class="container my-5">
+    <div class="container my-md-5">
       <div class="bg-primary-subtle rounded p-4 my-4">
         <div class="mb-3">
           <h3 class="d-inline align-middle">Cloud</h3>
@@ -77,31 +80,53 @@
         <div id="local" class="text-center"></div>
       </div>
 
-      <div class="mb-3">
-        <label for="log" class="form-label">Log</label>
-        <textarea
-          class="form-control"
-          rows="8"
-          id="log"
-          style="font-size: 0.8em"
-          readonly
-        ></textarea>
+      <br />
+
+      <div class="mb-2">
+        <label
+          for="log"
+          class="form-label text-decoration-underline"
+          data-bs-toggle="collapse"
+          href="#logCollapse"
+          role="button"
+          aria-expanded="false"
+          aria-controls="logCollapse"
+          >View log</label
+        >
+        <div class="collapse" id="logCollapse">
+          <textarea
+            class="form-control"
+            rows="8"
+            id="log"
+            style="font-size: 0.8em"
+            readonly
+          ></textarea>
+        </div>
       </div>
 
-      <div class="mb-3">
-        <label for="redis" class="form-label"
-          >Redis info (<a
+      <div class="mb-2">
+        <label
+          for="redis"
+          class="form-label text-decoration-underline"
+          data-bs-toggle="collapse"
+          href="#redisCollapse"
+          role="button"
+          aria-expanded="false"
+          aria-controls="redisCollapse"
+          >View/edit Redis info (<a
             target="_blank"
             href="https://github.com/nicolasff/webdis"
             >webdis</a
           >)</label
         >
-        <textarea
-          class="form-control"
-          rows="6"
-          id="redis"
-          style="font-size: 0.8em"
-        ></textarea>
+        <div class="collapse" id="redisCollapse">
+          <textarea
+            class="form-control"
+            rows="6"
+            id="redis"
+            style="font-size: 0.8em"
+          ></textarea>
+        </div>
       </div>
     </div>
 
@@ -248,8 +273,7 @@
 
       async function pushToCloud() {
         await getAndShowLocalClipboard();
-        cloud = local;
-        const { type, data } = cloud;
+        const { type, data } = local;
         log('Begin pushing to cloud');
         try {
           if (type === 'image') {
@@ -285,6 +309,7 @@
           return;
         }
         log('Finish pushing to cloud');
+        cloud = local;
         showClipboard(cloud, cloudContainer);
       }
 
@@ -292,8 +317,7 @@
         // Must be commented out: Safari does not allow this :)
         // https://stackoverflow.com/questions/66496294/clipboard-api-used-in-conjunction-with-axios-in-click-event
         // await getAndShowCloudClipboard();
-        local = cloud;
-        const { type, data } = local;
+        const { type, data } = cloud;
         log('Begin pulling to local');
         try {
           if (type === 'image') {
@@ -314,6 +338,7 @@
           return;
         }
         log('Finish pulling to local');
+        local = cloud;
         showClipboard(local, localContainer);
       }
 
