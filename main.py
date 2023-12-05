@@ -71,7 +71,7 @@ def copy(host, prefix, username, password):
     else:
         logging.info('Copy with Ctrl+C')
         run_silent('xdotool key ctrl+c')
-    sleep(0.2)
+    sleep(0.4)
 
     type, data = get_clipboard()
     if type is None:
@@ -119,7 +119,7 @@ def paste(host, prefix, username, password):
             f'Error data from cloud:\ntext: {repr(text[:64])}...\nimage: {repr(image[:64])}...'
         )
 
-    sleep(0.2)
+    sleep(0.4)
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
     if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_C_REGEX]):
