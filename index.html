@@ -47,17 +47,17 @@
         <div class="btn-group btn-group-lg my-2">
           <button
             type="button"
-            class="btn btn-outline-success"
-            onclick="pushToCloud()"
-          >
-            <i class="bi-cloud-upload"></i> Push to cloud
-          </button>
-          <button
-            type="button"
             class="btn btn-outline-primary"
             onclick="pullToLocal()"
           >
             <i class="bi-cloud-download"></i> Pull to local
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-success"
+            onclick="pushToCloud()"
+          >
+            <i class="bi-cloud-upload"></i> Push to cloud
           </button>
         </div>
       </div>
@@ -166,33 +166,30 @@
         } else {
           return {
             type: null,
-            data: 'Unknown clipboard MIME type: ' + item.types,
+            data: `Unknown clipboard MIME types: "${item.types}"`,
           };
         }
+      }
+
+      function getHeaders() {
+        return {
+          headers: {
+            Authorization:
+              'Basic ' + btoa(`${redis.username}:${redis.password}`),
+          },
+        };
       }
 
       async function fetchCloudData() {
         let text = fetch(
           `${redis.host}GET/${redis.prefix}:clipboard:text.txt`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                'Basic ' + btoa(`${redis.username}:${redis.password}`),
-            },
-          }
+          { method: 'GET', ...getHeaders() }
         )
           .then((response) => response.text())
           .catch(() => null);
         let image = fetch(
           `${redis.host}GET/${redis.prefix}:clipboard:image.png`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                'Basic ' + btoa(`${redis.username}:${redis.password}`),
-            },
-          }
+          { method: 'GET', ...getHeaders() }
         )
           .then((response) => response.blob())
           .catch(() => null);
@@ -222,6 +219,7 @@
           node.value = data;
           node.classList.add('form-control');
           node.rows = 5;
+          node.readOnly = true;
           container.replaceChildren(node);
         } else {
           const node = document.createElement('p');
@@ -248,16 +246,42 @@
       }
 
       async function pushToCloud() {
-        getAndShowLocalClipboard();
+        await getAndShowLocalClipboard();
         cloud = local;
         const { type, data } = cloud;
         log('Begin pushing to cloud');
-        // TODO: send data to cloud
-        if (type === 'image') {
-          await fetch('./');
-        } else if (type === 'text') {
-          await fetch('./');
-        } else {
+        try {
+          if (type === 'image') {
+            await Promise.all([
+              fetch(`${redis.host}SET/${redis.prefix}:clipboard:image`, {
+                method: 'PUT',
+                ...getHeaders(),
+                body: data,
+              }),
+              fetch(`${redis.host}DEL/${redis.prefix}:clipboard:text`, {
+                method: 'GET',
+                ...getHeaders(),
+              }),
+            ]);
+          } else if (type === 'text') {
+            await Promise.all([
+              fetch(`${redis.host}SET/${redis.prefix}:clipboard:text`, {
+                method: 'PUT',
+                ...getHeaders(),
+                body: data,
+              }),
+              fetch(`${redis.host}DEL/${redis.prefix}:clipboard:image`, {
+                method: 'GET',
+                ...getHeaders(),
+              }),
+            ]);
+          } else {
+            log(`Failed to push to cloud: unknown type ${type}`);
+            return;
+          }
+        } catch (e) {
+          log(`Failed to push to cloud: ${e.message}, ${e.stack}`);
+          return;
         }
         log('Finish pushing to cloud');
         showClipboard(cloud, cloudContainer);
