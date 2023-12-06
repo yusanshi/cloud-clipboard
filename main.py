@@ -66,13 +66,14 @@ def copy(host, prefix, username, password):
     logging.info('Copy')
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
+    sleep(0.4)
     if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):
         logging.info('Copy with Ctrl+Shift+C')
         run_silent('xdotool key ctrl+shift+c')
     else:
         logging.info('Copy with Ctrl+C')
         run_silent('xdotool key ctrl+c')
-    sleep(0.4)
+    sleep(0.2)
 
     type, data = get_clipboard()
     if type is None:
@@ -121,7 +122,7 @@ def paste(host, prefix, username, password):
         )
         return
 
-    sleep(0.4)
+    sleep(0.3)
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
     if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):
