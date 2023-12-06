@@ -22,7 +22,12 @@ Currently support these clients:
 
 Currently support these MIME types:
 - `text/plain`
+
+  ![image](https://github.com/yusanshi/cloud-clipboard/assets/36265606/983b4048-54a4-4854-86fc-1fcde5ebefc7)
+
 - `image/png`
+
+  ![image](https://github.com/yusanshi/cloud-clipboard/assets/36265606/7734906d-bcea-45e5-8cd6-d132856960ee)
 
 
 
