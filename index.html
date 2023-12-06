@@ -134,7 +134,9 @@
       const logContainer = document.querySelector('#log');
       const redisContainer = document.querySelector('#redis');
       function log(message) {
-        logContainer.value += `[${new Date().toISOString()}] ${message}\n`;
+        const line = `[${new Date().toISOString()}] ${message}\n`;
+        console.log(line);
+        logContainer.value += line;
         logContainer.scrollTop = logContainer.scrollHeight;
       }
 
@@ -205,13 +207,23 @@
           `${redis.host}GET/${redis.prefix}:clipboard:text.txt`,
           { method: 'GET', ...getHeaders() }
         )
-          .then((response) => response.text())
+          .then((response) => {
+            if (response.ok) {
+              return response.text();
+            }
+            throw new Error();
+          })
           .catch(() => null);
         let image = fetch(
           `${redis.host}GET/${redis.prefix}:clipboard:image.png`,
           { method: 'GET', ...getHeaders() }
         )
-          .then((response) => response.blob())
+          .then((response) => {
+            if (response.ok) {
+              return response.blob();
+            }
+            throw new Error();
+          })
           .catch(() => null);
 
         text = await text;
@@ -261,33 +273,16 @@
         showClipboard(local, localContainer);
       }
 
-      async function sha1Blob(blob) {
-        // https://stackoverflow.com/questions/21761453/create-sha-256-hash-from-a-blob-file-in-javascript
-        const uint8Array = new Uint8Array(await blob.arrayBuffer());
-        const hashBuffer = await crypto.subtle.digest('SHA-1', uint8Array);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map((h) => h.toString(16).padStart(2, '0')).join('');
-      }
-
       async function getAndShowCloudClipboard() {
-        let stringify = async (e) => {
-          if (e === undefined) {
-            return 'undefined';
-          }
-          if (e.data instanceof Blob) {
-            return JSON.stringify(e) + (await sha1Blob(e.data));
-          }
-          return JSON.stringify(e);
-        };
-        const previous = await stringify(cloud);
         cloud = await fetchCloudData();
-        const current = await stringify(cloud);
-        if (current != previous) {
-          showClipboard(cloud, cloudContainer);
-        }
+        showClipboard(cloud, cloudContainer);
       }
 
+      const identifier = (Math.random() + 1).toString(36).substring(2);
       async function pushToCloud() {
+        // Get newest local clipboard data.
+        // The local clipboard data can not be automatically updated
+        // as user interacting is needed to read clipboard
         await getAndShowLocalClipboard();
         const { type, data } = local;
         log('Begin pushing to cloud');
@@ -320,6 +315,14 @@
             log(`Failed to push to cloud: unknown type ${type}`);
             return;
           }
+          // Publish the change only after successfully pushing data
+          await fetch(
+            `${redis.host}PUBLISH/${redis.prefix}:clipboard/change-from-${identifier}`,
+            {
+              method: 'GET',
+              ...getHeaders(),
+            }
+          );
         } catch (e) {
           log(`Failed to push to cloud: ${e.message}, ${e.stack}`);
           return;
@@ -330,6 +333,7 @@
       }
 
       async function pullToLocal() {
+        // `cloud` is already the newest data
         const { type, data } = cloud;
         log('Begin pulling to local');
         try {
@@ -378,10 +382,32 @@
         });
 
         getAndShowLocalClipboard();
-        while (true) {
-          await getAndShowCloudClipboard();
-          await new Promise((r) => setTimeout(r, 500));
-        }
+        getAndShowCloudClipboard();
+
+        const xhr = new XMLHttpRequest();
+        let previousLength = 0;
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState == XMLHttpRequest.LOADING) {
+            const currentText = xhr.responseText;
+            const chunk = currentText.slice(previousLength);
+            previousLength = currentText.length;
+            if (!chunk.includes(identifier)) {
+              // Respond to updates from others to save a network request
+              log('Change detected for cloud clipboard, updating');
+              getAndShowCloudClipboard();
+            }
+          }
+        };
+        xhr.open(
+          'GET',
+          `${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`,
+          true
+        );
+        xhr.setRequestHeader(
+          'Authorization',
+          getHeaders().headers.Authorization
+        );
+        xhr.send(null);
       });
     </script>
   </body>

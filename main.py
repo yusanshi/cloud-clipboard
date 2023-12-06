@@ -94,6 +94,8 @@ def copy(host, prefix, username, password):
                     data=data.encode('utf-8'))
         session.get(f"{host}DEL/{prefix}:clipboard:image")
 
+    session.get(f"{host}PUBLISH/{prefix}:clipboard/change")
+
     logging.info('Upload successfully')
 
 

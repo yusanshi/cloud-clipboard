@@ -34,5 +34,8 @@ You should bind these commands to keyboard shortcuts:
 
   ![](https://github.com/yusanshi/cloud-clipboard/assets/36265606/f5c62bc3-bc66-4729-b606-f894ea6a202a)
 
+## TODO
 
-
+- [ ] Support file uploading
+- [ ] Show progress for Fetch API
+- [ ] Save different types of data in one Redis key
