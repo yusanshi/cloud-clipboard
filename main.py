@@ -7,7 +7,8 @@ import requests
 from pathlib import Path
 from time import sleep
 
-CTRL_SHIFT_C_REGEX = [
+# windows that use ctrl+shift+c/v instead of ctrl+c/v to copy/paste
+CTRL_SHIFT_REGEX = [
     r'.+ Visual Studio Code \[Terminal\]$',  # vscode terminal
     '^yu@yu-ubuntu: .+',  # gnome-terminal
 ]
@@ -65,7 +66,7 @@ def copy(host, prefix, username, password):
     logging.info('Copy')
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
-    if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_C_REGEX]):
+    if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):
         logging.info('Copy with Ctrl+Shift+C')
         run_silent('xdotool key ctrl+shift+c')
     else:
@@ -118,11 +119,12 @@ def paste(host, prefix, username, password):
         logging.info(
             f'Error data from cloud:\ntext: {repr(text[:64])}...\nimage: {repr(image[:64])}...'
         )
+        return
 
     sleep(0.4)
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
-    if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_C_REGEX]):
+    if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):
         logging.info('Paste with Ctrl+Shift+V')
         run_silent('xdotool key ctrl+shift+v')
     else:
