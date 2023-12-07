@@ -359,6 +359,37 @@
         showClipboard(local, localContainer);
       }
 
+      function longPolling() {
+        log('Start long polling connection');
+        const xhr = new XMLHttpRequest();
+        let previousLength = 0;
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState == XMLHttpRequest.LOADING) {
+            const currentText = xhr.responseText;
+            const chunk = currentText.slice(previousLength);
+            previousLength = currentText.length;
+            if (!chunk.includes(identifier) && chunk.includes('"message"')) {
+              // Respond to updates from others to save a network request
+              log('Change detected for cloud clipboard, updating');
+              getAndShowCloudClipboard();
+            }
+          } else if (xhr.readyState == XMLHttpRequest.DONE) {
+            // Restart the long polling
+            longPolling();
+          }
+        };
+        xhr.open(
+          'GET',
+          `${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`,
+          true
+        );
+        xhr.setRequestHeader(
+          'Authorization',
+          getHeaders().headers.Authorization
+        );
+        xhr.send(null);
+      }
+
       window.addEventListener('DOMContentLoaded', async () => {
         const storage = localStorage.getItem('redis');
         if (storage === null) {
@@ -383,31 +414,7 @@
 
         getAndShowLocalClipboard();
         getAndShowCloudClipboard();
-
-        const xhr = new XMLHttpRequest();
-        let previousLength = 0;
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState == XMLHttpRequest.LOADING) {
-            const currentText = xhr.responseText;
-            const chunk = currentText.slice(previousLength);
-            previousLength = currentText.length;
-            if (!chunk.includes(identifier)) {
-              // Respond to updates from others to save a network request
-              log('Change detected for cloud clipboard, updating');
-              getAndShowCloudClipboard();
-            }
-          }
-        };
-        xhr.open(
-          'GET',
-          `${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`,
-          true
-        );
-        xhr.setRequestHeader(
-          'Authorization',
-          getHeaders().headers.Authorization
-        );
-        xhr.send(null);
+        longPolling();
       });
     </script>
   </body>
