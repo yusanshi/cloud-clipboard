@@ -86,14 +86,11 @@ def copy(host, prefix, username, password):
 
     session = requests.Session()
     session.auth = (username, password)
-    if type == 'image':
-        session.put(f"{host}SET/{prefix}:clipboard:image", data=data)
-        session.get(f"{host}DEL/{prefix}:clipboard:text")
-    elif type == 'text':
-        session.put(f"{host}SET/{prefix}:clipboard:text",
-                    data=data.encode('utf-8'))
-        session.get(f"{host}DEL/{prefix}:clipboard:image")
-
+    if type == 'text':
+        data = data.encode('utf-8')
+    session.put(
+        f"{host}MSET/{prefix}:clipboard:type/{type}/{prefix}:clipboard:data",
+        data=data)
     session.get(f"{host}PUBLISH/{prefix}:clipboard/change")
 
     logging.info('Upload successfully')
@@ -104,24 +101,33 @@ def paste(host, prefix, username, password):
     session = requests.Session()
     session.auth = (username, password)
 
-    text = session.get(
-        f"{host}GET/{prefix}:clipboard:text.txt").content.decode('utf-8')
-    image = session.get(f"{host}GET/{prefix}:clipboard:image.png").content
-    if text and not image:
-        subprocess.run('xclip -selection clipboard -target text/plain -in',
-                       shell=True,
-                       input=text,
-                       text=True)
-        logging.info('Write text to clipboard')
-    elif not text and image:
+    data = session.get(
+        f"{host}MGET/{prefix}:clipboard:type/{prefix}:clipboard:data.raw"
+    ).content
+    if data == b'*2\r\n':
+        logging.info('Clipboard empty')
+        return
+
+    first = data.find(b'\r\n')
+    second = data.find(b'\r\n', first + 1)
+    third = data.find(b'\r\n', second + 1)
+    fourth = data.find(b'\r\n', third + 1)
+    type = data[second + 2:third].decode('utf-8')
+    data = data[fourth + 2:-2]
+
+    if type == 'image':
         subprocess.run('xclip -selection clipboard -target image/png -in',
                        shell=True,
-                       input=image)
+                       input=data)
         logging.info('Write image to clipboard')
+    elif type == 'text':
+        subprocess.run('xclip -selection clipboard -target text/plain -in',
+                       shell=True,
+                       input=data.decode('utf-8'),
+                       text=True)
+        logging.info('Write text to clipboard')
     else:
-        logging.info(
-            f'Error data from cloud:\ntext: {repr(text[:64])}...\nimage: {repr(image[:64])}...'
-        )
+        logging.info(f'Unknown type {type}')
         return
 
     sleep(0.3)

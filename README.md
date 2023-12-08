@@ -38,4 +38,3 @@ You should bind these commands to keyboard shortcuts:
 
 - [ ] Support file uploading
 - [ ] Show progress for Fetch API
-- [ ] Save different types of data in one Redis key
