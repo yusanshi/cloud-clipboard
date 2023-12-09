@@ -38,6 +38,15 @@
           <h3>Cloud</h3>
         </div>
         <div id="cloud" class="text-center"></div>
+        <div
+          id="progressBar"
+          class="progress mt-4 d-none"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div id="progressBarInner" class="progress-bar"></div>
+        </div>
       </div>
 
       <div class="text-center">
@@ -188,6 +197,7 @@
       integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
 
     <script>
       const logContainer = document.querySelector('#log');
@@ -216,7 +226,10 @@
         try {
           items = await navigator.clipboard.read();
         } catch (e) {
-          return { type: null, data: `Failed to read clipboard: ${e.message}` };
+          return {
+            type: null,
+            data: `Failed to read clipboard: ${e.name} ${e.message}`,
+          };
         }
 
         if (items.length === 0) {
@@ -243,22 +256,40 @@
         }
       }
 
-      function getHeaders() {
-        return {
-          headers: {
-            Authorization:
-              'Basic ' + btoa(`${redis.username}:${redis.password}`),
-          },
+      function B2KB(byte) {
+        if (byte === undefined) {
+          return '-';
+        }
+        return Math.round(byte / 1024);
+      }
+
+      function generateProgressHook(prefix) {
+        const progressHook = ({ loaded, total, rate }) => {
+          if (total < 256 * 1024) {
+            return;
+          }
+          const progress = Math.round((loaded / total) * 100);
+          progressBar.classList.remove('d-none');
+          progressBarInner.style.width = `${progress}%`;
+          progressBarInner.textContent = `${prefix}: ${progress}% (${B2KB(
+            loaded
+          )}/${B2KB(total)} KB, ${B2KB(rate)} KB/s)`;
         };
+        return progressHook;
       }
 
       async function fetchCloudData() {
         try {
-          const response = await fetch(
+          const response = await axios.get(
             `${redis.host}MGET/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data.raw`,
-            { method: 'GET', ...getHeaders() }
+            {
+              responseType: 'blob',
+              auth: { username: redis.username, password: redis.password },
+              onDownloadProgress: generateProgressHook('Downloading'),
+            }
           );
-          const blob = await response.blob();
+          progressBar.classList.add('d-none');
+          const blob = response.data;
           // Parse Redis RESP data manually, not using a RESP parser library since we use a very simple and fixed format
           // The RESP spec for the data types we need:
           //    Arrays: *<number-of-elements>\r\n<element-1>...<element-n>
@@ -327,7 +358,11 @@
         showClipboard(cloud, cloudContainer);
       }
 
+      // Used to distinguish whether the published message is from self
       const identifier = (Math.random() + 1).toString(36).substring(2);
+
+      const progressBar = document.querySelector('#progressBar');
+      const progressBarInner = document.querySelector('#progressBarInner');
       async function pushToCloud() {
         // Get newest local clipboard data.
         // The local clipboard data can not be automatically updated
@@ -340,22 +375,20 @@
           return;
         }
         try {
-          await fetch(
+          await axios.put(
             `${redis.host}MSET/${redis.prefix}:clipboard:type/${type}/${redis.prefix}:clipboard:data`,
+            data,
             {
-              method: 'PUT',
-              ...getHeaders(),
-              body: data,
+              auth: { username: redis.username, password: redis.password },
+              onUploadProgress: generateProgressHook('Uploading'),
             }
           );
           // Publish the change only after successfully pushing data
-          await fetch(
+          await axios.get(
             `${redis.host}PUBLISH/${redis.prefix}:clipboard/change-from-${identifier}`,
-            {
-              method: 'GET',
-              ...getHeaders(),
-            }
+            { auth: { username: redis.username, password: redis.password } }
           );
+          progressBar.classList.add('d-none');
         } catch (e) {
           log(`Failed to push to cloud: ${e.message}, ${e.stack}`);
           return;
@@ -394,33 +427,25 @@
 
       function longPolling() {
         log('Start long polling connection');
-        const xhr = new XMLHttpRequest();
         let previousLength = 0;
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState == XMLHttpRequest.LOADING) {
-            const currentText = xhr.responseText;
-            const chunk = currentText.slice(previousLength);
-            previousLength = currentText.length;
-            if (!chunk.includes(identifier) && chunk.includes('"message"')) {
-              // Respond to updates from others to save a network request
-              log('Change detected for cloud clipboard, updating');
-              getAndShowCloudClipboard();
-            }
-          } else if (xhr.readyState == XMLHttpRequest.DONE) {
+        axios
+          .get(`${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`, {
+            auth: { username: redis.username, password: redis.password },
+            onDownloadProgress: ({ event }) => {
+              const currentText = event.currentTarget.responseText;
+              const chunk = currentText.slice(previousLength);
+              previousLength = currentText.length;
+              if (!chunk.includes(identifier) && chunk.includes('"message"')) {
+                // Don't respond to updates from self to save a network request
+                log('Change detected for cloud clipboard, updating');
+                getAndShowCloudClipboard();
+              }
+            },
+          })
+          .catch(() => {
             // Restart the long polling
             longPolling();
-          }
-        };
-        xhr.open(
-          'GET',
-          `${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`,
-          true
-        );
-        xhr.setRequestHeader(
-          'Authorization',
-          getHeaders().headers.Authorization
-        );
-        xhr.send(null);
+          });
       }
 
       window.addEventListener('DOMContentLoaded', async () => {

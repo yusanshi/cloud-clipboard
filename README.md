@@ -37,4 +37,3 @@ You should bind these commands to keyboard shortcuts:
 ## TODO
 
 - [ ] Support file uploading (Not well defined. What is local clipboard containing file on a phone? No plan yet.)
-- [ ] Show progress for Fetch API (Need to use `XMLHttpRequest` or `axios`. I don't like `XMLHttpRequest` or introducing another library, so no plan yet.)
