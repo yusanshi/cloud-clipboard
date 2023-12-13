@@ -91,7 +91,7 @@ def copy(host, prefix, username, password):
     session.put(
         f"{host}MSET/{prefix}:clipboard:type/{type}/{prefix}:clipboard:data",
         data=data)
-    session.get(f"{host}PUBLISH/{prefix}:clipboard/change")
+    session.get(f"{host}PUBLISH/{prefix}/clipboard-change")
 
     logging.info('Upload successfully')
 

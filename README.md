@@ -34,6 +34,6 @@ You should bind these commands to keyboard shortcuts:
 
   ![](https://github.com/yusanshi/cloud-clipboard/assets/36265606/f5c62bc3-bc66-4729-b606-f894ea6a202a)
 
-## TODO
+### File
 
-- [ ] Support file uploading (Not well defined. What is local clipboard containing file on a phone? No plan yet.)
+TODO

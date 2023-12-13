@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cloud Clipboard</title>
-
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -21,7 +22,7 @@
       }
       img {
         max-width: 100%;
-        max-height: 400px;
+        max-height: 300px;
         border: 1px solid #ddd;
         border-radius: 5px;
       }
@@ -32,59 +33,113 @@
   </head>
 
   <body>
-    <div class="container my-md-5">
-      <div class="bg-primary-subtle rounded p-4 my-4">
-        <div class="mb-3">
-          <h3>Cloud</h3>
-        </div>
-        <div id="cloud" class="text-center"></div>
-        <div
-          id="progressBar"
-          class="progress mt-4 d-none"
-          role="progressbar"
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-          <div id="progressBarInner" class="progress-bar"></div>
+    <div class="container my-4">
+      <div class="p-3 my-4 bg-body-tertiary shadow-sm border rounded">
+        <div class="bg-info-subtle rounded p-3">
+          <div class="mb-4">
+            <h3 class="d-inline align-middle">Cloud File</h3>
+            <button
+              type="button"
+              id="chooseFileButton"
+              class="btn btn-outline-info ms-2 align-middle"
+              onclick="document.querySelector('#chooseFileInput').click()"
+            >
+              <i class="bi bi-file-earmark-plus"></i>
+            </button>
+            <input
+              type="file"
+              id="chooseFileInput"
+              class="d-none"
+              onchange="uploadChosenFile()"
+            />
+            <button
+              type="button"
+              id="removeCloudFileButton"
+              class="btn btn-outline-info ms-2 align-middle d-none"
+              onclick="removeCloudFile()"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+            <a
+              id="downloadCloudFileButton"
+              class="btn btn-outline-info ms-2 align-middle d-none"
+            >
+              <i class="bi bi-download"></i>
+            </a>
+          </div>
+          <div id="cloudFile" class="text-center"></div>
+          <div
+            id="fileProgressBar"
+            class="progress mt-3 d-none"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="progress-bar"></div>
+          </div>
         </div>
       </div>
 
-      <div class="text-center">
-        <div class="btn-group btn-group-lg my-2">
-          <button
-            type="button"
-            class="btn btn-outline-primary"
-            onclick="pullToLocal()"
+      <div class="p-3 my-4 bg-body-tertiary shadow-sm border rounded">
+        <div class="bg-primary-subtle rounded p-3">
+          <div class="mb-3">
+            <h3 class="d-inline align-middle">Cloud Clipboard</h3>
+            <button
+              type="button"
+              id="removeCloudClipboardButton"
+              class="btn btn-outline-primary ms-2 align-middle d-none"
+              onclick="removeCloudClipboard()"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div id="cloudClipboard" class="text-center"></div>
+          <div
+            id="clipboardProgressBar"
+            class="progress mt-3 d-none"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
           >
-            <i class="bi-cloud-download"></i> Pull to local
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-success"
-            onclick="pushToCloud()"
-          >
-            <i class="bi-cloud-upload"></i> Push to cloud
-          </button>
+            <div class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div class="text-center my-3">
+          <div class="btn-group">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              onclick="pullClipboardToLocal()"
+            >
+              <i class="bi bi-cloud-download"></i> Pull to local
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-success"
+              onclick="pushClipboardToCloud()"
+            >
+              <i class="bi bi-cloud-upload"></i> Push to cloud
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-success-subtle rounded p-3">
+          <div class="mb-3">
+            <h3 class="d-inline align-middle">Local Clipboard</h3>
+            <button
+              type="button"
+              class="btn btn-outline-success ms-2 align-middle"
+              onclick="getAndShowLocalClipboard()"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+          <div id="localClipboard" class="text-center"></div>
         </div>
       </div>
 
-      <div class="bg-success-subtle rounded p-4 my-4">
-        <div class="mb-3">
-          <h3 class="d-inline align-middle">Local</h3>
-          <button
-            type="button"
-            class="btn btn-outline-success m-2 align-middle"
-            onclick="getAndShowLocalClipboard()"
-          >
-            Retry/Refresh
-          </button>
-        </div>
-        <div id="local" class="text-center"></div>
-      </div>
-
-      <br />
-
-      <div class="mb-2">
+      <div class="my-2">
         <label
           for="log"
           class="form-label text-decoration-underline"
@@ -106,7 +161,7 @@
         </div>
       </div>
 
-      <div class="mb-2">
+      <div class="my-2">
         <label for="redis" class="form-label"
           ><span
             class="text-decoration-underline"
@@ -202,11 +257,37 @@
     <script>
       const logContainer = document.querySelector('#log');
       const redisContainer = document.querySelector('#redis');
+      const localClipboardContainer = document.querySelector('#localClipboard');
+      const cloudClipboardContainer = document.querySelector('#cloudClipboard');
+      const cloudFileContainer = document.querySelector('#cloudFile');
+      const clipboardProgressBar = document.querySelector(
+        '#clipboardProgressBar'
+      );
+      const fileProgressBar = document.querySelector('#fileProgressBar');
+      const chooseFileButton = document.querySelector('#chooseFileButton');
+      const removeCloudFileButton = document.querySelector(
+        '#removeCloudFileButton'
+      );
+      const downloadCloudFileButton = document.querySelector(
+        '#downloadCloudFileButton'
+      );
+      const removeCloudClipboardButton = document.querySelector(
+        '#removeCloudClipboardButton'
+      );
+      const chooseFileInput = document.querySelector('#chooseFileInput');
+
       function log(message) {
         const line = `[${new Date().toISOString()}] ${message}\n`;
         console.log(line);
         logContainer.value += line;
         logContainer.scrollTop = logContainer.scrollHeight;
+      }
+
+      function hide(element) {
+        element.classList.add('d-none');
+      }
+      function show(element) {
+        element.classList.remove('d-none');
       }
 
       async function readClipboard() {
@@ -260,35 +341,39 @@
         if (byte === undefined) {
           return '-';
         }
-        return Math.round(byte / 1024);
+        return Math.ceil(byte / 1024);
       }
 
-      function generateProgressHook(prefix) {
+      function generateProgressHook(title, container) {
         const progressHook = ({ loaded, total, rate }) => {
-          if (total < 256 * 1024) {
+          if (total < 128 * 1024) {
             return;
           }
           const progress = Math.round((loaded / total) * 100);
-          progressBar.classList.remove('d-none');
-          progressBarInner.style.width = `${progress}%`;
-          progressBarInner.textContent = `${prefix}: ${progress}% (${B2KB(
+          show(container);
+          const innerProgressBar = container.querySelector('.progress-bar');
+          innerProgressBar.style.width = `${progress}%`;
+          innerProgressBar.textContent = `${title}: ${progress}% (${B2KB(
             loaded
           )}/${B2KB(total)} KB, ${B2KB(rate)} KB/s)`;
         };
         return progressHook;
       }
 
-      async function fetchCloudData() {
+      async function fetchCloudClipboard() {
         try {
           const response = await axios.get(
             `${redis.host}MGET/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data.raw`,
             {
               responseType: 'blob',
               auth: { username: redis.username, password: redis.password },
-              onDownloadProgress: generateProgressHook('Downloading'),
+              onDownloadProgress: generateProgressHook(
+                'Downloading',
+                clipboardProgressBar
+              ),
             }
           );
-          progressBar.classList.add('d-none');
+          hide(clipboardProgressBar);
           const blob = response.data;
           // Parse Redis RESP data manually, not using a RESP parser library since we use a very simple and fixed format
           // The RESP spec for the data types we need:
@@ -315,7 +400,43 @@
         } catch (e) {
           return {
             type: null,
-            data: `Failed to fetch data from cloud: ${e.message}, ${e.stack}`,
+            data: `Failed to fetch clipboard from cloud: ${e.message}, ${e.stack}`,
+          };
+        }
+      }
+
+      async function fetchCloudFile() {
+        try {
+          const response = await axios.get(
+            `${redis.host}MGET/${redis.prefix}:file:filename/${redis.prefix}:file:data.raw`,
+            {
+              responseType: 'blob',
+              auth: { username: redis.username, password: redis.password },
+              onDownloadProgress: generateProgressHook(
+                'Downloading',
+                fileProgressBar
+              ),
+            }
+          );
+          hide(fileProgressBar);
+          const blob = response.data;
+          const text = await blob.text();
+          if (text === '*2\r\n') {
+            return { filename: null, data: 'No file' };
+          }
+          const first = text.indexOf('\r\n');
+          const second = text.indexOf('\r\n', first + 1);
+          const third = text.indexOf('\r\n', second + 1);
+          const fourth = text.indexOf('\r\n', third + 1);
+          const filename = decodeURIComponent(
+            atob(text.slice(second + 2, third))
+          );
+          const file = new File([blob.slice(fourth + 2, -2)], filename);
+          return { filename, data: file };
+        } catch (e) {
+          return {
+            filename: null,
+            data: `Failed to fetch file from cloud: ${e.message}, ${e.stack}`,
           };
         }
       }
@@ -330,48 +451,75 @@
           const node = document.createElement('textarea');
           node.value = data;
           node.classList.add('form-control');
-          node.rows = 5;
+          node.rows = 4;
           node.readOnly = true;
           container.replaceChildren(node);
         } else {
           const node = document.createElement('p');
           node.innerText = data;
-          node.style.color = 'red';
           container.replaceChildren(node);
         }
       }
 
-      let local;
-      let cloud;
+      function showFile({ filename, data }, container) {
+        const node = document.createElement('p');
+        if (filename === null) {
+          node.innerText = data;
+        } else {
+          node.innerText = `${data.name}, ${B2KB(data.size)} KB`;
+        }
+        container.replaceChildren(node);
+
+        if (filename !== null) {
+          downloadCloudFileButton.href = URL.createObjectURL(data);
+          downloadCloudFileButton.download = filename;
+        }
+      }
+
+      let localClipboard;
+      let cloudClipboard;
+      let cloudFile;
       let redis;
 
-      const localContainer = document.querySelector('#local');
-      const cloudContainer = document.querySelector('#cloud');
-
       async function getAndShowLocalClipboard() {
-        local = await readClipboard();
-        showClipboard(local, localContainer);
+        localClipboard = await readClipboard();
+        showClipboard(localClipboard, localClipboardContainer);
       }
 
       async function getAndShowCloudClipboard() {
-        cloud = await fetchCloudData();
-        showClipboard(cloud, cloudContainer);
+        cloudClipboard = await fetchCloudClipboard();
+        showClipboard(cloudClipboard, cloudClipboardContainer);
+        if (cloudClipboard.type === null) {
+          hide(removeCloudClipboardButton);
+        } else {
+          show(removeCloudClipboardButton);
+        }
+      }
+
+      async function getAndShowCloudFile() {
+        cloudFile = await fetchCloudFile();
+        showFile(cloudFile, cloudFileContainer);
+        if (cloudFile.filename === null) {
+          hide(removeCloudFileButton);
+          hide(downloadCloudFileButton);
+        } else {
+          show(removeCloudFileButton);
+          show(downloadCloudFileButton);
+        }
       }
 
       // Used to distinguish whether the published message is from self
       const identifier = (Math.random() + 1).toString(36).substring(2);
 
-      const progressBar = document.querySelector('#progressBar');
-      const progressBarInner = document.querySelector('#progressBarInner');
-      async function pushToCloud() {
+      async function pushClipboardToCloud() {
         // Get newest local clipboard data.
         // The local clipboard data can not be automatically updated
         // as user interacting is needed to read clipboard
         await getAndShowLocalClipboard();
-        const { type, data } = local;
-        log('Begin pushing to cloud');
+        const { type, data } = localClipboard;
+        log('Begin pushing clipboard to cloud');
         if (!['image', 'text'].includes(type)) {
-          log(`Failed to push to cloud: unknown type ${type}`);
+          log(`Failed to push clipboard to cloud: unknown type ${type}`);
           return;
         }
         try {
@@ -380,28 +528,32 @@
             data,
             {
               auth: { username: redis.username, password: redis.password },
-              onUploadProgress: generateProgressHook('Uploading'),
+              onUploadProgress: generateProgressHook(
+                'Uploading',
+                clipboardProgressBar
+              ),
             }
           );
           // Publish the change only after successfully pushing data
           await axios.get(
-            `${redis.host}PUBLISH/${redis.prefix}:clipboard/change-from-${identifier}`,
+            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`,
             { auth: { username: redis.username, password: redis.password } }
           );
-          progressBar.classList.add('d-none');
+          hide(clipboardProgressBar);
         } catch (e) {
-          log(`Failed to push to cloud: ${e.message}, ${e.stack}`);
+          log(`Failed to push clipboard to cloud: ${e.message}, ${e.stack}`);
           return;
         }
-        log('Finish pushing to cloud');
-        cloud = local;
-        showClipboard(cloud, cloudContainer);
+        log('Finish pushing clipboard to cloud');
+        cloudClipboard = localClipboard;
+        showClipboard(cloudClipboard, cloudClipboardContainer);
+        show(removeCloudClipboardButton);
       }
 
-      async function pullToLocal() {
-        // `cloud` is already the newest data
-        const { type, data } = cloud;
-        log('Begin pulling to local');
+      async function pullClipboardToLocal() {
+        // `cloudClipboard` is already the newest data
+        const { type, data } = cloudClipboard;
+        log('Begin pulling clipboard to local');
         try {
           if (type === 'image') {
             await navigator.clipboard.write([
@@ -413,23 +565,112 @@
               new ClipboardItem({ 'text/plain': blob }),
             ]);
           } else {
-            log(`Failed to pull to local: unknown type ${type}`);
+            log(`Failed to pull clipboard to local: unknown type ${type}`);
             return;
           }
         } catch (e) {
-          log(`Failed to pull to local: ${e.message}, ${e.stack}`);
+          log(`Failed to pull clipboard to local: ${e.message}, ${e.stack}`);
           return;
         }
-        log('Finish pulling to local');
-        local = cloud;
-        showClipboard(local, localContainer);
+        log('Finish pulling clipboard to local');
+        localClipboard = cloudClipboard;
+        showClipboard(localClipboard, localClipboardContainer);
+      }
+
+      async function removeCloudClipboard() {
+        log('Begin removing cloud clipboard');
+        try {
+          await axios.get(
+            `${redis.host}DEL/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data`,
+            {
+              auth: { username: redis.username, password: redis.password },
+            }
+          );
+          // Publish the change only after successfully pushing data
+          await axios.get(
+            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`,
+            { auth: { username: redis.username, password: redis.password } }
+          );
+        } catch (e) {
+          log(`Failed to remove cloud clipboard: ${e.message}, ${e.stack}`);
+          return;
+        }
+        log('Finish removing cloud clipboard');
+        cloudClipboard = { type: null, data: 'Clipboard empty' };
+        showClipboard(cloudClipboard, cloudClipboardContainer);
+        hide(removeCloudClipboardButton);
+      }
+
+      async function removeCloudFile() {
+        log('Begin removing cloud file');
+        try {
+          await axios.get(
+            `${redis.host}DEL/${redis.prefix}:file:filename/${redis.prefix}:file:data`,
+            {
+              auth: { username: redis.username, password: redis.password },
+            }
+          );
+          // Publish the change only after successfully pushing data
+          await axios.get(
+            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`,
+            { auth: { username: redis.username, password: redis.password } }
+          );
+        } catch (e) {
+          log(`Failed to remove cloud file: ${e.message}, ${e.stack}`);
+          return;
+        }
+        log('Finish removing cloud file');
+        cloudFile = { filename: null, data: 'No file' };
+        showFile(cloudFile, cloudFileContainer);
+        hide(removeCloudFileButton);
+        hide(downloadCloudFileButton);
+      }
+
+      async function uploadChosenFile() {
+        if (chooseFileInput.files.length == 0) {
+          log('No file selected');
+          return;
+        }
+        const file = chooseFileInput.files[0];
+        const filename = file.name;
+        log(`Choose file ${filename} with size ${B2KB(file.size)} KB`);
+        log('Begin pushing file to cloud');
+        try {
+          await axios.put(
+            `${redis.host}MSET/${redis.prefix}:file:filename/${btoa(
+              encodeURIComponent(filename)
+            )}/${redis.prefix}:file:data`,
+            file,
+            {
+              auth: { username: redis.username, password: redis.password },
+              onUploadProgress: generateProgressHook(
+                'Uploading',
+                fileProgressBar
+              ),
+            }
+          );
+          // Publish the change only after successfully pushing data
+          await axios.get(
+            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`,
+            { auth: { username: redis.username, password: redis.password } }
+          );
+          hide(fileProgressBar);
+        } catch (e) {
+          log(`Failed to push file to cloud: ${e.message}, ${e.stack}`);
+          return;
+        }
+        log('Finish pushing file to cloud');
+        cloudFile = { filename, data: file };
+        showFile(cloudFile, cloudFileContainer);
+        show(removeCloudFileButton);
+        show(downloadCloudFileButton);
       }
 
       function longPolling() {
         log('Start long polling connection');
         let previousLength = 0;
         axios
-          .get(`${redis.host}SUBSCRIBE/${redis.prefix}:clipboard`, {
+          .get(`${redis.host}SUBSCRIBE/${redis.prefix}`, {
             auth: { username: redis.username, password: redis.password },
             onDownloadProgress: ({ event }) => {
               const currentText = event.currentTarget.responseText;
@@ -437,14 +678,30 @@
               previousLength = currentText.length;
               if (!chunk.includes(identifier) && chunk.includes('"message"')) {
                 // Don't respond to updates from self to save a network request
-                log('Change detected for cloud clipboard, updating');
-                getAndShowCloudClipboard();
+                if (chunk.includes('clipboard-change')) {
+                  log('Change detected for cloud clipboard, updating');
+                  getAndShowCloudClipboard();
+                } else if (chunk.includes('file-change')) {
+                  log('Change detected for cloud file, updating');
+                  getAndShowCloudFile();
+                }
               }
             },
           })
+          .then(() => {
+            // The browser other than Chrome (e.g., Safari) treats `ERR_INCOMPLETE_CHUNKED_ENCODING 200` as OK, make it not OK :)
+            throw new Error('Connection terminated');
+          })
           .catch(() => {
-            // Restart the long polling
-            longPolling();
+            if (previousLength === 0) {
+              // Never receive a message
+              log(
+                'Long polling connection failed. Please check the Redis info.'
+              );
+            } else {
+              // Timeout, restart the long polling
+              longPolling();
+            }
           });
       }
 
@@ -472,6 +729,7 @@
 
         getAndShowLocalClipboard();
         getAndShowCloudClipboard();
+        getAndShowCloudFile();
         longPolling();
       });
     </script>
