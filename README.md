@@ -1,6 +1,18 @@
 # cloud-clipboard
 
+<https://clipboard.yusanshi.com>
+
 Sync your clipboard across devices.
+
+## Database
+
+This project uses Redis as the database and the HTTP interface provided by [webdis](https://github.com/nicolasff/webdis). These info are needed:
+
+- `host`: the address of webdis.
+
+- `prefix`: used to isolate difference space.
+
+- `username` and `password`: used for HTTP Basic Auth.
 
 ##  Supported clients
 
@@ -8,32 +20,32 @@ Sync your clipboard across devices.
 
 <https://clipboard.yusanshi.com>
 
-I use it for my iPhone.
+Support syncing clipboard (`text/plain` and `image/png`) and file.
 
-Remember to set the Redis info ([webdis](https://github.com/nicolasff/webdis)) at the bottom of the webpage. These info are saved in `localStorage` so you only need to input it once for each device.
+The Redis info can be set at the bottom of the webpage. These info are saved in `localStorage` so you only need to input it once for each device.
 
 ### Ubuntu GNOME: `main.py`
+
+Only support syncing clipboard (`text/plain` and `image/png`). No file sync.
 
 You should bind these commands to keyboard shortcuts:
 
 - Copy selected content and push to cloud clipboard: `python /path/to/main.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
   
 - Pull from cloud clipboard and paste: `python /path/to/main.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
-  
-> About Redis info: `host` is the address of webdis. `prefix` is used to isolate difference space. `username` and `password` are for HTTP Basic Auth. You should set the same info for all your clients and devices.
 
 
+## Supported data types
 
-## Supported MIME types
+### Clipboard: `text/plain`
 
-### `text/plain`
+![image](https://github.com/yusanshi/cloud-clipboard/assets/36265606/0f830a05-6d19-409e-8c20-46af5f6faee6)
 
-  ![](https://github.com/yusanshi/cloud-clipboard/assets/36265606/ede5557f-fab9-4209-a967-066dda80dd8e)
+### Clipboard: `image/png`
 
-### `image/png`
-
-  ![](https://github.com/yusanshi/cloud-clipboard/assets/36265606/f5c62bc3-bc66-4729-b606-f894ea6a202a)
+![image](https://github.com/yusanshi/cloud-clipboard/assets/36265606/fc8b237e-cac8-400f-a578-d9a46bf1fee1)
 
 ### File
 
-TODO
+![image](https://github.com/yusanshi/cloud-clipboard/assets/36265606/b8d4bcaf-9c5d-4578-b6c4-694f5da32377)
+
