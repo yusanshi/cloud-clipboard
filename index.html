@@ -29,13 +29,44 @@
       .collapsing {
         transition: height 0.25s ease;
       }
+      .drag-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9;
+        border-radius: 5px;
+        pointer-events: none;
+      }
+      .drag-overlay-inactive {
+        opacity: 0;
+      }
+      .drag-overlay-active-outer {
+        background-color: #fffe;
+        border: dashed 4px #aaa;
+        color: #aaa;
+      }
+      .drag-overlay-active-inner {
+        background-color: #ddde;
+        border: dashed 4px #666;
+        color: #666;
+      }
     </style>
   </head>
 
   <body>
     <div class="container my-4">
-      <div class="p-3 my-4 bg-body-tertiary shadow-sm border rounded">
-        <div class="bg-info-subtle rounded p-3">
+      <div
+        class="p-3 my-4 bg-body-tertiary shadow-sm border rounded position-relative"
+      >
+        <div
+          id="cloudFileDragOverlay"
+          class="drag-overlay drag-overlay-inactive d-flex align-items-center justify-content-center"
+        >
+          <h3>Drop file here to upload</h3>
+        </div>
+        <div class="bg-info-subtle rounded p-3" id="cloudFileDrag">
           <div class="mb-4">
             <h3 class="d-inline align-middle">Cloud File</h3>
             <button
@@ -275,6 +306,10 @@
         '#removeCloudClipboardButton'
       );
       const chooseFileInput = document.querySelector('#chooseFileInput');
+      const cloudFileDrag = document.querySelector('#cloudFileDrag');
+      const cloudFileDragOverlay = document.querySelector(
+        '#cloudFileDragOverlay'
+      );
 
       function log(message) {
         const line = `[${new Date().toISOString()}] ${message}\n`;
@@ -627,8 +662,12 @@
       }
 
       async function uploadChosenFile() {
-        if (chooseFileInput.files.length == 0) {
+        if (chooseFileInput.files.length === 0) {
           log('No file selected');
+          return;
+        }
+        if (chooseFileInput.files.length > 1) {
+          log('Multiple files not allowed');
           return;
         }
         const file = chooseFileInput.files[0];
@@ -731,6 +770,84 @@
         getAndShowCloudClipboard();
         getAndShowCloudFile();
         longPolling();
+
+        let inDocument = false;
+        let inOverlay = false;
+
+        function adjustOverlayClass() {
+          const onlyKeep = (className) => {
+            [
+              'drag-overlay-inactive',
+              'drag-overlay-active-outer',
+              'drag-overlay-active-inner',
+            ]
+              .filter((e) => e != className)
+              .forEach((e) => cloudFileDragOverlay.classList.remove(e));
+            cloudFileDragOverlay.classList.add(className);
+          };
+
+          if (inDocument && inOverlay) {
+            onlyKeep('drag-overlay-active-inner');
+            return;
+          }
+          if (inDocument) {
+            onlyKeep('drag-overlay-active-outer');
+            return;
+          }
+          if (inOverlay) {
+            // Unexpected condition: inDocument: false, inOverlay: true
+            return;
+          }
+          onlyKeep('drag-overlay-inactive');
+        }
+
+        document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+        });
+        document.addEventListener('dragenter', (e) => {
+          // https://stackoverflow.com/a/54271161/8418049
+          if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+          }
+          inDocument = true;
+          adjustOverlayClass();
+          e.preventDefault();
+        });
+        document.addEventListener('dragleave', (e) => {
+          if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+          }
+          inDocument = false;
+          adjustOverlayClass();
+          e.preventDefault();
+        });
+        document.addEventListener('drop', (e) => {
+          inDocument = false;
+          inOverlay = false;
+          adjustOverlayClass();
+          e.preventDefault();
+        });
+        cloudFileDrag.addEventListener('dragenter', (e) => {
+          if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+          }
+          inOverlay = true;
+          adjustOverlayClass();
+          e.preventDefault();
+        });
+        cloudFileDrag.addEventListener('dragleave', (e) => {
+          if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+          }
+          inOverlay = false;
+          adjustOverlayClass();
+          e.preventDefault();
+        });
+        cloudFileDrag.addEventListener('drop', (e) => {
+          chooseFileInput.files = e.dataTransfer.files;
+          uploadChosenFile();
+          e.preventDefault();
+        });
       });
     </script>
   </body>
