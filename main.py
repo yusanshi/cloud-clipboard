@@ -62,7 +62,7 @@ def get_clipboard():
         return None, None
 
 
-def copy(host, prefix, username, password):
+def copy(host, prefix, username=None, password=None):
     logging.info('Copy')
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
@@ -85,7 +85,8 @@ def copy(host, prefix, username, password):
     )
 
     session = requests.Session()
-    session.auth = (username, password)
+    if username is not None:
+        session.auth = (username, password)
     if type == 'text':
         data = data.encode('utf-8')
     session.put(
@@ -96,10 +97,11 @@ def copy(host, prefix, username, password):
     logging.info('Upload successfully')
 
 
-def paste(host, prefix, username, password):
+def paste(host, prefix, username=None, password=None):
     logging.info('Paste')
     session = requests.Session()
-    session.auth = (username, password)
+    if username is not None:
+        session.auth = (username, password)
 
     data = session.get(
         f"{host}MGET/{prefix}:clipboard:type/{prefix}:clipboard:data.raw"

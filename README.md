@@ -9,10 +9,8 @@ Sync your clipboard across devices.
 This project uses Redis as the database and the HTTP interface provided by [webdis](https://github.com/nicolasff/webdis). These info are needed:
 
 - `host`: the address of webdis.
-
 - `prefix`: used to isolate difference space.
-
-- `username` and `password`: used for HTTP Basic Auth.
+- `username` and `password` (optional, but strongly recommended): used for HTTP Basic Auth.
 
 ##  Supported clients
 

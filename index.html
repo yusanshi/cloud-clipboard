@@ -220,7 +220,7 @@
         <div class="collapse" id="redisCollapse">
           <textarea
             class="form-control"
-            rows="6"
+            rows="5"
             id="redis"
             style="font-size: 0.8em"
           ></textarea>
@@ -416,7 +416,6 @@
             `${redis.host}MGET/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data.raw`,
             {
               responseType: 'blob',
-              auth: { username: redis.username, password: redis.password },
               onDownloadProgress: generateProgressHook(
                 'Downloading',
                 clipboardProgressBar
@@ -503,7 +502,6 @@
             `${redis.host}MGET/${redis.prefix}:file:filename/${redis.prefix}:file:data.raw`,
             {
               responseType: 'blob',
-              auth: { username: redis.username, password: redis.password },
               onDownloadProgress: generateProgressHook(
                 'Downloading',
                 fileProgressBar
@@ -630,7 +628,6 @@
             `${redis.host}MSET/${redis.prefix}:clipboard:type/${type}/${redis.prefix}:clipboard:data`,
             data,
             {
-              auth: { username: redis.username, password: redis.password },
               onUploadProgress: generateProgressHook(
                 'Uploading',
                 clipboardProgressBar
@@ -639,8 +636,7 @@
           );
           // Publish the change only after successfully pushing data
           await axios.get(
-            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`,
-            { auth: { username: redis.username, password: redis.password } }
+            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`
           );
           hide(clipboardProgressBar);
         } catch (e) {
@@ -684,15 +680,11 @@
         log('Begin removing cloud clipboard');
         try {
           await axios.get(
-            `${redis.host}DEL/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data`,
-            {
-              auth: { username: redis.username, password: redis.password },
-            }
+            `${redis.host}DEL/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data`
           );
           // Publish the change only after successfully pushing data
           await axios.get(
-            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`,
-            { auth: { username: redis.username, password: redis.password } }
+            `${redis.host}PUBLISH/${redis.prefix}/clipboard-change-from-${identifier}`
           );
         } catch (e) {
           log(`Failed to remove cloud clipboard: ${e.message}, ${e.stack}`);
@@ -708,15 +700,11 @@
         log('Begin removing cloud file');
         try {
           await axios.get(
-            `${redis.host}DEL/${redis.prefix}:file:filename/${redis.prefix}:file:data`,
-            {
-              auth: { username: redis.username, password: redis.password },
-            }
+            `${redis.host}DEL/${redis.prefix}:file:filename/${redis.prefix}:file:data`
           );
           // Publish the change only after successfully pushing data
           await axios.get(
-            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`,
-            { auth: { username: redis.username, password: redis.password } }
+            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`
           );
         } catch (e) {
           log(`Failed to remove cloud file: ${e.message}, ${e.stack}`);
@@ -754,7 +742,6 @@
             )}/${redis.prefix}:file:data`,
             file,
             {
-              auth: { username: redis.username, password: redis.password },
               onUploadProgress: generateProgressHook(
                 'Uploading',
                 fileProgressBar
@@ -764,8 +751,7 @@
           );
           // Publish the change only after successfully pushing data
           await axios.get(
-            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`,
-            { auth: { username: redis.username, password: redis.password } }
+            `${redis.host}PUBLISH/${redis.prefix}/file-change-from-${identifier}`
           );
           hide(fileProgressBar);
         } catch (e) {
@@ -789,7 +775,6 @@
         let previousLength = 0;
         axios
           .get(`${redis.host}SUBSCRIBE/${redis.prefix}`, {
-            auth: { username: redis.username, password: redis.password },
             onDownloadProgress: ({ event }) => {
               const currentText = event.currentTarget.responseText;
               const chunk = currentText.slice(previousLength);
@@ -827,10 +812,8 @@
         const storage = localStorage.getItem('redis');
         if (storage === null) {
           redis = {
-            host: 'https://example.com/',
-            prefix: 'prefix',
-            username: 'username',
-            password: 'password',
+            host: 'https://public-webdis.onrender.com/',
+            prefix: 'public-dont-input-sensitive-info',
           };
           log('Redis info not found in local storage');
         } else {
@@ -844,6 +827,20 @@
           localStorage.setItem('redis', redisContainer.value);
           log('Redis info changed');
         });
+
+        if (redis.host.includes('public-webdis.onrender.com')) {
+          document.querySelector('div.container').insertAdjacentHTML(
+            'afterbegin',
+            `<div class="alert alert-danger my-3">
+    <span class="fw-bold">You are using a public webdis database. Don't input any sensitive info.</span> This public database may be slow, and don't support real-time sync (i.e., need to refresh the webpage manually to get the latest status). You should create your own webdis database and input the connection info at the bottom of the webpage.
+</div>`
+          );
+        }
+
+        if (redis.username) {
+          axios.defaults.headers.common['Authorization'] =
+            'Basic ' + btoa(`${redis.username}:${redis.password}`);
+        }
 
         getAndShowLocalClipboard();
         getAndShowCloudClipboard();
