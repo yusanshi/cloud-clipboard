@@ -56,18 +56,16 @@
   </head>
 
   <body>
-    <div class="container my-4">
-      <div
-        class="p-3 my-4 bg-body-tertiary shadow-sm border rounded position-relative"
-      >
+    <div class="container">
+      <div class="my-4 position-relative">
         <div
           id="cloudFileDragOverlay"
           class="drag-overlay drag-overlay-inactive d-flex align-items-center justify-content-center"
         >
           <h3>Drop file here to upload</h3>
         </div>
-        <div class="bg-info-subtle rounded p-3" id="cloudFileDrag">
-          <div class="mb-4">
+        <div class="bg-info-subtle shadow-sm rounded p-3" id="cloudFileDrag">
+          <div class="mb-3">
             <h3 class="d-inline align-middle">Cloud File</h3>
             <button
               type="button"
@@ -92,6 +90,13 @@
               <i class="bi bi-trash"></i>
             </button>
             <a
+              id="previewCloudFileButton"
+              target="_blank"
+              class="btn btn-outline-info ms-2 align-middle d-none"
+            >
+              <i class="bi bi-eye"></i>
+            </a>
+            <a
               id="downloadCloudFileButton"
               class="btn btn-outline-info ms-2 align-middle d-none"
             >
@@ -111,8 +116,10 @@
         </div>
       </div>
 
-      <div class="p-3 my-4 bg-body-tertiary shadow-sm border rounded">
-        <div class="bg-primary-subtle rounded p-3">
+      <hr style="opacity: 0.1; margin: 2rem 0" />
+
+      <div class="my-4">
+        <div class="bg-primary-subtle shadow-sm rounded p-3">
           <div class="mb-3">
             <h3 class="d-inline align-middle">Cloud Clipboard</h3>
             <button
@@ -155,7 +162,7 @@
           </div>
         </div>
 
-        <div class="bg-success-subtle rounded p-3">
+        <div class="bg-success-subtle shadow-sm rounded p-3">
           <div class="mb-3">
             <h3 class="d-inline align-middle">Local Clipboard</h3>
             <button
@@ -251,6 +258,9 @@
           class="octo-body"
         ></path></svg></a
     ><style>
+      .github-corner svg {
+        clip-path: polygon(0 0, 100% 0, 100% 100%);
+      }
       .github-corner:hover .octo-arm {
         animation: octocat-wave 560ms ease-in-out;
       }
@@ -298,6 +308,9 @@
       const chooseFileButton = document.querySelector('#chooseFileButton');
       const removeCloudFileButton = document.querySelector(
         '#removeCloudFileButton'
+      );
+      const previewCloudFileButton = document.querySelector(
+        '#previewCloudFileButton'
       );
       const downloadCloudFileButton = document.querySelector(
         '#downloadCloudFileButton'
@@ -440,6 +453,48 @@
         }
       }
 
+      const urlsafe = {
+        // encode unicode string to url safe ascii
+        encode: (utf) => {
+          return btoa(encodeURIComponent(utf))
+            .replaceAll('+', '.')
+            .replaceAll('/', '_')
+            .replaceAll('=', '-');
+        },
+        // decode url safe ascii to unicode string
+        decode: (ascii) => {
+          return decodeURIComponent(
+            atob(
+              ascii
+                .replaceAll('.', '+')
+                .replaceAll('_', '/')
+                .replaceAll('-', '=')
+            )
+          );
+        },
+      };
+
+      function filename2mime(filename) {
+        // Taken from /etc/nginx/mime.types
+        // prettier-ignore
+        const extension2mime = new Map([['html', 'text/html'], ['htm', 'text/html'], ['shtml', 'text/html'], ['css', 'text/css'], ['xml', 'text/xml'], ['gif', 'image/gif'], ['jpeg', 'image/jpeg'], ['jpg', 'image/jpeg'], ['js', 'application/javascript'], ['atom', 'application/atom+xml'], ['rss', 'application/rss+xml'], ['mml', 'text/mathml'], ['txt', 'text/plain'], ['jad', 'text/vnd.sun.j2me.app-descriptor'], ['wml', 'text/vnd.wap.wml'], ['htc', 'text/x-component'], ['png', 'image/png'], ['tif', 'image/tiff'], ['tiff', 'image/tiff'], ['wbmp', 'image/vnd.wap.wbmp'], ['ico', 'image/x-icon'], ['jng', 'image/x-jng'], ['bmp', 'image/x-ms-bmp'], ['svg', 'image/svg+xml'], ['svgz', 'image/svg+xml'], ['webp', 'image/webp'], ['woff', 'application/font-woff'], ['jar', 'application/java-archive'], ['war', 'application/java-archive'], ['ear', 'application/java-archive'], ['json', 'application/json'], ['hqx', 'application/mac-binhex40'], ['doc', 'application/msword'], ['pdf', 'application/pdf'], ['ps', 'application/postscript'], ['eps', 'application/postscript'], ['ai', 'application/postscript'], ['rtf', 'application/rtf'], ['m3u8', 'application/vnd.apple.mpegurl'], ['xls', 'application/vnd.ms-excel'], ['eot', 'application/vnd.ms-fontobject'], ['ppt', 'application/vnd.ms-powerpoint'], ['wmlc', 'application/vnd.wap.wmlc'], ['kml', 'application/vnd.google-earth.kml+xml'], ['kmz', 'application/vnd.google-earth.kmz'], ['7z', 'application/x-7z-compressed'], ['cco', 'application/x-cocoa'], ['jardiff', 'application/x-java-archive-diff'], ['jnlp', 'application/x-java-jnlp-file'], ['run', 'application/x-makeself'], ['pl', 'application/x-perl'], ['pm', 'application/x-perl'], ['prc', 'application/x-pilot'], ['pdb', 'application/x-pilot'], ['rar', 'application/x-rar-compressed'], ['rpm', 'application/x-redhat-package-manager'], ['sea', 'application/x-sea'], ['swf', 'application/x-shockwave-flash'], ['sit', 'application/x-stuffit'], ['tcl', 'application/x-tcl'], ['tk', 'application/x-tcl'], ['der', 'application/x-x509-ca-cert'], ['pem', 'application/x-x509-ca-cert'], ['crt', 'application/x-x509-ca-cert'], ['xpi', 'application/x-xpinstall'], ['xhtml', 'application/xhtml+xml'], ['xspf', 'application/xspf+xml'], ['zip', 'application/zip'], ['bin', 'application/octet-stream'], ['exe', 'application/octet-stream'], ['dll', 'application/octet-stream'], ['deb', 'application/octet-stream'], ['dmg', 'application/octet-stream'], ['iso', 'application/octet-stream'], ['img', 'application/octet-stream'], ['msi', 'application/octet-stream'], ['msp', 'application/octet-stream'], ['msm', 'application/octet-stream'], [ 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ], [ 'xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ], [ 'pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', ], ['mid', 'audio/midi'], ['midi', 'audio/midi'], ['kar', 'audio/midi'], ['mp3', 'audio/mpeg'], ['ogg', 'audio/ogg'], ['m4a', 'audio/x-m4a'], ['ra', 'audio/x-realaudio'], ['3gpp', 'video/3gpp'], ['3gp', 'video/3gpp'], ['ts', 'video/mp2t'], ['mp4', 'video/mp4'], ['mpeg', 'video/mpeg'], ['mpg', 'video/mpeg'], ['mov', 'video/quicktime'], ['webm', 'video/webm'], ['flv', 'video/x-flv'], ['m4v', 'video/x-m4v'], ['mng', 'video/x-mng'], ['asx', 'video/x-ms-asf'], ['asf', 'video/x-ms-asf'], ['wmv', 'video/x-ms-wmv'], ['avi', 'video/x-msvideo']]);
+        const extension = filename.split('.').pop().toLowerCase();
+        if (extension2mime.has(extension)) {
+          return extension2mime.get(extension);
+        }
+        return '';
+      }
+
+      let abortController;
+      function reinitializeAbortController() {
+        // abort the old request and create a new abort controller
+        if (abortController !== undefined) {
+          abortController.abort();
+        }
+        abortController = new AbortController();
+        return abortController.signal;
+      }
+
       async function fetchCloudFile() {
         try {
           const response = await axios.get(
@@ -451,6 +506,7 @@
                 'Downloading',
                 fileProgressBar
               ),
+              signal: reinitializeAbortController(),
             }
           );
           hide(fileProgressBar);
@@ -463,12 +519,18 @@
           const second = text.indexOf('\r\n', first + 1);
           const third = text.indexOf('\r\n', second + 1);
           const fourth = text.indexOf('\r\n', third + 1);
-          const filename = decodeURIComponent(
-            atob(text.slice(second + 2, third))
-          );
-          const file = new File([blob.slice(fourth + 2, -2)], filename);
+          const filename = urlsafe.decode(text.slice(second + 2, third));
+          const file = new File([blob.slice(fourth + 2, -2)], filename, {
+            type: filename2mime(filename),
+          });
           return { filename, data: file };
         } catch (e) {
+          if (axios.isCancel(e)) {
+            return {
+              filename: null,
+              data: 'Fetch file request canceled',
+            };
+          }
           return {
             filename: null,
             data: `Failed to fetch file from cloud: ${e.message}, ${e.stack}`,
@@ -506,7 +568,9 @@
         container.replaceChildren(node);
 
         if (filename !== null) {
-          downloadCloudFileButton.href = URL.createObjectURL(data);
+          const url = URL.createObjectURL(data);
+          previewCloudFileButton.href = url;
+          downloadCloudFileButton.href = url;
           downloadCloudFileButton.download = filename;
         }
       }
@@ -536,9 +600,11 @@
         showFile(cloudFile, cloudFileContainer);
         if (cloudFile.filename === null) {
           hide(removeCloudFileButton);
+          hide(previewCloudFileButton);
           hide(downloadCloudFileButton);
         } else {
           show(removeCloudFileButton);
+          show(previewCloudFileButton);
           show(downloadCloudFileButton);
         }
       }
@@ -658,6 +724,7 @@
         cloudFile = { filename: null, data: 'No file' };
         showFile(cloudFile, cloudFileContainer);
         hide(removeCloudFileButton);
+        hide(previewCloudFileButton);
         hide(downloadCloudFileButton);
       }
 
@@ -671,13 +738,17 @@
           return;
         }
         const file = chooseFileInput.files[0];
+        if (file.size === 0) {
+          log('Empty file');
+          return;
+        }
         const filename = file.name;
         log(`Choose file ${filename} with size ${B2KB(file.size)} KB`);
         log('Begin pushing file to cloud');
         try {
           await axios.put(
-            `${redis.host}MSET/${redis.prefix}:file:filename/${btoa(
-              encodeURIComponent(filename)
+            `${redis.host}MSET/${redis.prefix}:file:filename/${urlsafe.encode(
+              filename
             )}/${redis.prefix}:file:data`,
             file,
             {
@@ -686,6 +757,7 @@
                 'Uploading',
                 fileProgressBar
               ),
+              signal: reinitializeAbortController(),
             }
           );
           // Publish the change only after successfully pushing data
@@ -695,6 +767,10 @@
           );
           hide(fileProgressBar);
         } catch (e) {
+          if (axios.isCancel(e)) {
+            log('Push file request canceled');
+            return;
+          }
           log(`Failed to push file to cloud: ${e.message}, ${e.stack}`);
           return;
         }
@@ -702,6 +778,7 @@
         cloudFile = { filename, data: file };
         showFile(cloudFile, cloudFileContainer);
         show(removeCloudFileButton);
+        show(previewCloudFileButton);
         show(downloadCloudFileButton);
       }
 
