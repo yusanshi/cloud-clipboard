@@ -53,7 +53,11 @@ def get_clipboard():
     if 'image/png' in targets:
         image = run_get_binary_output(
             'xclip -selection clipboard -target image/png -out')
-        return 'image', image
+        return 'image-png', image
+    elif 'image/jpeg' in targets:
+        image = run_get_binary_output(
+            'xclip -selection clipboard -target image/jpeg -out')
+        return 'image-jpg', image
     elif 'text/plain' in targets:
         text = run_get_output(
             'xclip -selection clipboard -target text/plain -out')
@@ -117,11 +121,16 @@ def paste(host, prefix, username=None, password=None):
     type = data[second + 2:third].decode('utf-8')
     data = data[fourth + 2:-2]
 
-    if type == 'image':
+    if type == 'image-png':
         subprocess.run('xclip -selection clipboard -target image/png -in',
                        shell=True,
                        input=data)
-        logging.info('Write image to clipboard')
+        logging.info('Write PNG image to clipboard')
+    elif type == 'image-jpg':
+        subprocess.run('xclip -selection clipboard -target image/jpeg -in',
+                       shell=True,
+                       input=data)
+        logging.info('Write JPG image to clipboard')
     elif type == 'text':
         subprocess.run('xclip -selection clipboard -target text/plain -in',
                        shell=True,

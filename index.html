@@ -58,7 +58,7 @@
   </head>
 
   <body>
-    <div class="container">
+    <div class="container my-4">
       <div class="my-4 position-relative">
         <div
           id="cloudFileDragOverlay"
@@ -374,7 +374,11 @@
         const item = items[0];
         if (item.types.includes('image/png')) {
           const blob = await item.getType('image/png');
-          return { type: 'image', data: blob };
+          return { type: 'image-png', data: blob };
+        } else if (item.types.includes('image/jpeg')) {
+          // Note: current the browsers seem to not support image/jpeg :)
+          const blob = await item.getType('image/jpeg');
+          return { type: 'image-jpg', data: blob };
         } else if (item.types.includes('text/plain')) {
           const blob = await item.getType('text/plain');
           const text = await blob.text();
@@ -420,6 +424,7 @@
                 'Downloading',
                 clipboardProgressBar
               ),
+              signal: reinitializeAbortController('clipboard'),
             }
           );
           hide(clipboardProgressBar);
@@ -428,8 +433,8 @@
           // The RESP spec for the data types we need:
           //    Arrays: *<number-of-elements>\r\n<element-1>...<element-n>
           //    Bulk strings: $<length>\r\n<data>\r\n
-          // An example data: *2\r\n$5\r\nimage\r\n$500\r\n[image]\r\n
-          // where [image] is image bytes with 500 length
+          // An example data: *2\r\n$5\r\nimage-png\r\n$500\r\n[image]\r\n
+          // where [image] is PNG image bytes with 500 length
           const text = await blob.text();
           if (text === '*2\r\n') {
             return { type: null, data: 'Clipboard empty' };
@@ -439,14 +444,22 @@
           const third = text.indexOf('\r\n', second + 1);
           const fourth = text.indexOf('\r\n', third + 1);
           const type = text.slice(second + 2, third);
-          if (type === 'image') {
+          if (type === 'image-png') {
             return { type, data: blob.slice(fourth + 2, -2, 'image/png') };
+          } else if (type === 'image-jpg') {
+            return { type, data: blob.slice(fourth + 2, -2, 'image/jpeg') };
           } else if (type === 'text') {
             return { type, data: await blob.slice(fourth + 2, -2).text() };
           } else {
             throw new Error(`unknown type ${type}`);
           }
         } catch (e) {
+          if (axios.isCancel(e)) {
+            return {
+              type: null,
+              data: 'Fetch clipboard request canceled',
+            };
+          }
           return {
             type: null,
             data: `Failed to fetch clipboard from cloud: ${e.message}, ${e.stack}`,
@@ -486,14 +499,17 @@
         return '';
       }
 
-      let abortController;
-      function reinitializeAbortController() {
+      const abortController = {
+        clipboard: null,
+        file: null,
+      };
+      function reinitializeAbortController(type) {
         // abort the old request and create a new abort controller
-        if (abortController !== undefined) {
-          abortController.abort();
+        if (abortController[type] !== null) {
+          abortController[type].abort();
         }
-        abortController = new AbortController();
-        return abortController.signal;
+        abortController[type] = new AbortController();
+        return abortController[type].signal;
       }
 
       async function fetchCloudFile() {
@@ -506,7 +522,7 @@
                 'Downloading',
                 fileProgressBar
               ),
-              signal: reinitializeAbortController(),
+              signal: reinitializeAbortController('file'),
             }
           );
           hide(fileProgressBar);
@@ -539,7 +555,7 @@
       }
 
       function showClipboard({ type, data }, container) {
-        if (type === 'image') {
+        if (type === 'image-png' || type === 'image-jpg') {
           const image = new Image();
           image.src = URL.createObjectURL(data);
           image.classList.add('shadow');
@@ -619,7 +635,7 @@
         await getAndShowLocalClipboard();
         const { type, data } = localClipboard;
         log('Begin pushing clipboard to cloud');
-        if (!['image', 'text'].includes(type)) {
+        if (!['image-png', 'image-jpg', 'text'].includes(type)) {
           log(`Failed to push clipboard to cloud: unknown type ${type}`);
           return;
         }
@@ -632,6 +648,7 @@
                 'Uploading',
                 clipboardProgressBar
               ),
+              signal: reinitializeAbortController('clipboard'),
             }
           );
           // Publish the change only after successfully pushing data
@@ -640,6 +657,10 @@
           );
           hide(clipboardProgressBar);
         } catch (e) {
+          if (axios.isCancel(e)) {
+            log('Push clipboard request canceled');
+            return;
+          }
           log(`Failed to push clipboard to cloud: ${e.message}, ${e.stack}`);
           return;
         }
@@ -654,9 +675,13 @@
         const { type, data } = cloudClipboard;
         log('Begin pulling clipboard to local');
         try {
-          if (type === 'image') {
+          if (type === 'image-png') {
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': data }),
+            ]);
+          } else if (type === 'image-jpg') {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/jpeg': data }),
             ]);
           } else if (type === 'text') {
             const blob = new Blob([data], { type: 'text/plain' });
@@ -746,7 +771,7 @@
                 'Uploading',
                 fileProgressBar
               ),
-              signal: reinitializeAbortController(),
+              signal: reinitializeAbortController('file'),
             }
           );
           // Publish the change only after successfully pushing data
