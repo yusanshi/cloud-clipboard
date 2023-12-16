@@ -494,22 +494,16 @@
       }
 
       function Uint8ArrayIndexOf(array, subArray, position = 0) {
-        // Note: currently the implementation is not efficient
         if (
           !(array instanceof Uint8Array) ||
           !(subArray instanceof Uint8Array)
         ) {
           throw new Error('Wrong type');
         }
-        const full = Array.from(array)
-          .map((x) => String(x).padStart(3, '0'))
-          .join('');
-        const sub = Array.from(subArray)
-          .map((x) => String(x).padStart(3, '0'))
-          .join('');
-        const result = full.indexOf(sub, position * 3);
-        if (result >= 0) {
-          return result / 3;
+        for (let i = position; i < array.length; i++) {
+          if (subArray.every((value, index) => value === array[i + index])) {
+            return i;
+          }
         }
         return -1;
       }
