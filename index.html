@@ -435,15 +435,17 @@
           //    Bulk strings: $<length>\r\n<data>\r\n
           // An example data: *2\r\n$5\r\nimage-png\r\n$500\r\n[image]\r\n
           // where [image] is PNG image bytes with 500 length
-          const text = await blob.text();
-          if (text === '*2\r\n') {
+          const array = new Uint8Array(await blob.arrayBuffer());
+          if (array.length === 4) {
+            // '*2\r\n'
             return { type: null, data: 'Clipboard empty' };
           }
-          const first = text.indexOf('\r\n');
-          const second = text.indexOf('\r\n', first + 1);
-          const third = text.indexOf('\r\n', second + 1);
-          const fourth = text.indexOf('\r\n', third + 1);
-          const type = text.slice(second + 2, third);
+          const crlf = new TextEncoder().encode('\r\n');
+          const first = Uint8ArrayIndexOf(array, crlf);
+          const second = Uint8ArrayIndexOf(array, crlf, first + 1);
+          const third = Uint8ArrayIndexOf(array, crlf, second + 1);
+          const fourth = Uint8ArrayIndexOf(array, crlf, third + 1);
+          const type = new TextDecoder().decode(array.slice(second + 2, third));
           if (type === 'image-png') {
             return { type, data: blob.slice(fourth + 2, -2, 'image/png') };
           } else if (type === 'image-jpg') {
@@ -466,27 +468,6 @@
           };
         }
       }
-
-      const urlsafe = {
-        // encode unicode string to url safe ascii
-        encode: (utf) => {
-          return btoa(encodeURIComponent(utf))
-            .replaceAll('+', '.')
-            .replaceAll('/', '_')
-            .replaceAll('=', '-');
-        },
-        // decode url safe ascii to unicode string
-        decode: (ascii) => {
-          return decodeURIComponent(
-            atob(
-              ascii
-                .replaceAll('.', '+')
-                .replaceAll('_', '/')
-                .replaceAll('-', '=')
-            )
-          );
-        },
-      };
 
       function filename2mime(filename) {
         // Taken from /etc/nginx/mime.types
@@ -512,6 +493,27 @@
         return abortController[type].signal;
       }
 
+      function Uint8ArrayIndexOf(array, subArray, position = 0) {
+        // Note: currently the implementation is not efficient
+        if (
+          !(array instanceof Uint8Array) ||
+          !(subArray instanceof Uint8Array)
+        ) {
+          throw new Error('Wrong type');
+        }
+        const full = Array.from(array)
+          .map((x) => String(x).padStart(3, '0'))
+          .join('');
+        const sub = Array.from(subArray)
+          .map((x) => String(x).padStart(3, '0'))
+          .join('');
+        const result = full.indexOf(sub, position * 3);
+        if (result >= 0) {
+          return result / 3;
+        }
+        return -1;
+      }
+
       async function fetchCloudFile() {
         try {
           const response = await axios.get(
@@ -527,15 +529,19 @@
           );
           hide(fileProgressBar);
           const blob = response.data;
-          const text = await blob.text();
-          if (text === '*2\r\n') {
+          const array = new Uint8Array(await blob.arrayBuffer());
+          if (array.length === 4) {
+            // '*2\r\n'
             return { filename: null, data: 'No file' };
           }
-          const first = text.indexOf('\r\n');
-          const second = text.indexOf('\r\n', first + 1);
-          const third = text.indexOf('\r\n', second + 1);
-          const fourth = text.indexOf('\r\n', third + 1);
-          const filename = urlsafe.decode(text.slice(second + 2, third));
+          const crlf = new TextEncoder().encode('\r\n');
+          const first = Uint8ArrayIndexOf(array, crlf);
+          const second = Uint8ArrayIndexOf(array, crlf, first + 1);
+          const third = Uint8ArrayIndexOf(array, crlf, second + 1);
+          const fourth = Uint8ArrayIndexOf(array, crlf, third + 1);
+          const filename = new TextDecoder().decode(
+            array.slice(second + 2, third)
+          );
           const file = new File([blob.slice(fourth + 2, -2)], filename, {
             type: filename2mime(filename),
           });
@@ -762,9 +768,11 @@
         log('Begin pushing file to cloud');
         try {
           await axios.put(
-            `${redis.host}MSET/${redis.prefix}:file:filename/${urlsafe.encode(
-              filename
-            )}/${redis.prefix}:file:data`,
+            `${redis.host}MSET/${
+              redis.prefix
+            }:file:filename/${encodeURIComponent(filename)}/${
+              redis.prefix
+            }:file:data`,
             file,
             {
               onUploadProgress: generateProgressHook(
