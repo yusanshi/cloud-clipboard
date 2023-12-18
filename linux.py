@@ -8,6 +8,7 @@ from pathlib import Path
 from time import sleep
 
 # windows that use ctrl+shift+c/v instead of ctrl+c/v to copy/paste
+# NOTE: replace at your needs
 CTRL_SHIFT_REGEX = [
     r'.+ Visual Studio Code \[Terminal\]$',  # vscode terminal
     '^yu@yu-ubuntu: .+',  # gnome-terminal
