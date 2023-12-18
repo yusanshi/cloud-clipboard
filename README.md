@@ -81,8 +81,10 @@ pip install requests fire pyautogui Pillow pywin32
 ```
 You can then bind these commands to keyboard shortcuts:
 
-- Copy selected content (send `Ctrl+C`) and push to cloud clipboard: `python /path/to/windows.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
-- Pull from cloud clipboard and paste (send `Ctrl+V`): `python /path/to/windows.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+> Note: (1) we use `pythonw` instead of `python` to suppress the window popping up. (2) [AutoHotkey](https://www.autohotkey.com/) is recommended to bind the keyboard shortcuts.
+
+- Copy selected content (send `Ctrl+C`) and push to cloud clipboard: `pythonw /path/to/windows.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Pull from cloud clipboard and paste (send `Ctrl+V`): `pythonw /path/to/windows.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 
 
 

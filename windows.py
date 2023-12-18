@@ -1,15 +1,20 @@
-import subprocess
+import sys
+import os
+if sys.executable.endswith('pythonw.exe'):
+    # https://stackoverflow.com/questions/24835155/pyw-and-pythonw-does-not-run-under-windows-7
+    sys.stdout = sys.stderr = open(os.devnull, 'w')
+
 import fire
 import logging
 import requests
 import tkinter as tk
 import win32clipboard
+import PIL
+import io
 
 from pathlib import Path
 from time import sleep
 from pyautogui import hotkey
-import PIL
-import io
 
 logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] %(message)s",
@@ -22,6 +27,13 @@ logging.basicConfig(level=logging.INFO,
 
 def get_clipboard():
     image = PIL.ImageGrab.grabclipboard()
+
+    # When copying the image from explorer or Photos APP,
+    # you'll get `[filepath]`, instead of the image data
+    if isinstance(image, list) and len(image) == 1 and os.path.isfile(
+            image[0]):
+        image = PIL.Image.open(image[0])
+
     if isinstance(image, PIL.Image.Image):
         byte_array = io.BytesIO()
         # TODO: how to distinguish between PNG and JPG images and use different format respectively
