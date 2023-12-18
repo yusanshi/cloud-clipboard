@@ -8,6 +8,27 @@ Sync your clipboard across devices.
 - Don't need to be within the same LAN (at the cost of additional online database).
 - Multiple clients: webpage/iOS/Linux/Windows.
 
+## DEMO
+
+**Clipboard: text**
+
+Copy text to clipboard on PC and paste on iPhone, and then reverse the process.
+
+https://github.com/yusanshi/cloud-clipboard/assets/36265606/ff3d73cb-7af4-462f-9687-d41a98eb98a7
+
+**Clipboard: image**
+
+Copy an image to clipboard on PC and paste on iPhone, and then reverse the process.
+
+https://github.com/yusanshi/cloud-clipboard/assets/36265606/1734eb8f-3873-4b70-905c-0b5ec3b73ec5
+
+**File**
+
+Upload a file from PC and download to iPhone, and then reverse the process.
+
+https://github.com/yusanshi/cloud-clipboard/assets/36265606/50029f91-8355-4705-9521-c7d26b21e17c
+
+
 ## Database
 
 This project uses Redis as the database and the HTTP interface provided by [webdis](https://github.com/nicolasff/webdis). These info are needed:
