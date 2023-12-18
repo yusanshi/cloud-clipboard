@@ -39,14 +39,6 @@ def run_silent(command):
                    stderr=subprocess.DEVNULL)
 
 
-def run_verbose(command):
-    return subprocess.run(command,
-                          shell=True,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT,
-                          text=True).stdout.strip()
-
-
 def get_clipboard():
     targets = run_get_output('xclip -selection clipboard -target TARGETS -out')
     targets = targets.split('\n')
@@ -71,7 +63,7 @@ def copy(host, prefix, username=None, password=None):
     logging.info('Copy')
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
-    sleep(0.4)
+    sleep(0.3)
     if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):
         logging.info('Copy with Ctrl+Shift+C')
         run_silent('xdotool key ctrl+shift+c')
@@ -142,7 +134,7 @@ def paste(host, prefix, username=None, password=None):
         logging.info(f'Unknown type {type}')
         return
 
-    sleep(0.3)
+    sleep(0.2)
     window_name = run_get_output('xdotool getactivewindow getwindowname')
     logging.info(f'Current active window name: {window_name}')
     if any([re.match(pattern, window_name) for pattern in CTRL_SHIFT_REGEX]):

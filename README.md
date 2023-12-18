@@ -22,12 +22,14 @@ This project comes with a public webdis instance for testing. It is **(1) not se
 
 > |                   | Clipboard: `text/plain` | Clipboard: `image/png` | Clipboard: `image/jpeg` | Clipboard: `image/heic`, `image/heif` | File (of any type) |
 > | ----------------- | ----------------------- | ---------------------- | ----------------------- | ------------------------------------- | ------------------- |
-> | **webpage**       | ✓                       | ✓                      |                         |                                       | ✓                   |
-> | **iOS Shortcuts** | ✓                       | ✓                      | ✓ | ✓[^1]                                | ✓                   |
+> | **webpage**       | ✓                       | ✓                      | [^1] |                                       | ✓                   |
+> | **iOS Shortcuts** | ✓                       | ✓                      | ✓ | ✓[^2]                               | ✓                   |
 > | **Linux Desktop** | ✓                       | ✓                      | ✓                       |                                       |                     |
-> | **Windows** | ✓ | ✓ | ✓ | | |
+> | **Windows** | ✓ | ✓[^3] | ✓ | | |
 >
-> [^1]: For iOS, the HEIC/HEIF images will be converted to JPG before being pushed to cloud.
+> [^1]: Has been implemented in the code. But currently the implementations of the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) do not support `image/jpeg`.
+> [^2]: For iOS, the HEIC/HEIF images will be converted to JPG before being pushed to cloud.
+> [^3]: Due to technical limit, the alpha channel is removed and filled with white (`#FFF`).
 
 ### webpage: `index.html`
 
@@ -57,17 +59,17 @@ You can add the first three shortcuts to home screen for quick use. The last one
 
 ### Linux Desktop: `linux.py`
 
-> Tested on Ubuntu GNOME.
+> Tested on Ubuntu GNOME (X11).
 
 First install some packages:
 ```bash
 pip install requests fire
-sudo apt install xclip xdotool
+sudo apt install xclip xdotool # if you use APT as the package manager
 ```
 You can then bind these commands to keyboard shortcuts:
 
-- Copy selected content and push to cloud clipboard: `python /path/to/linux.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
-- Pull from cloud clipboard and paste: `python /path/to/linux.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Copy selected content (send `Ctrl+C`) and push to cloud clipboard: `python /path/to/linux.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Pull from cloud clipboard and paste (send `Ctrl+V`): `python /path/to/linux.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 
 ### Windows: `windows.py`
 
@@ -75,12 +77,12 @@ You can then bind these commands to keyboard shortcuts:
 
 First install some packages:
 ```bash
-TODO
+pip install requests fire pyautogui Pillow pywin32
 ```
 You can then bind these commands to keyboard shortcuts:
 
-- Copy selected content and push to cloud clipboard: `python /path/to/windows.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
-- Pull from cloud clipboard and paste: `python /path/to/windows.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Copy selected content (send `Ctrl+C`) and push to cloud clipboard: `python /path/to/windows.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Pull from cloud clipboard and paste (send `Ctrl+V`): `python /path/to/windows.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 
 
 
