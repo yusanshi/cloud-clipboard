@@ -25,6 +25,7 @@ This project comes with a public webdis instance for testing. It is **(1) not se
 > | **webpage**       | ✓                       | ✓                      |                         |                                       | ✓                   |
 > | **iOS Shortcuts** | ✓                       | ✓                      | ✓ | ✓[^1]                                | ✓                   |
 > | **Linux Desktop** | ✓                       | ✓                      | ✓                       |                                       |                     |
+> | **Windows** | ✓ | ✓ | ✓ | | |
 >
 > [^1]: For iOS, the HEIC/HEIF images will be converted to JPG before being pushed to cloud.
 
@@ -68,7 +69,18 @@ You can then bind these commands to keyboard shortcuts:
 - Copy selected content and push to cloud clipboard: `python /path/to/linux.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 - Pull from cloud clipboard and paste: `python /path/to/linux.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 
+### Windows: `windows.py`
 
+> Tested on  Windows 11.
+
+First install some packages:
+```bash
+TODO
+```
+You can then bind these commands to keyboard shortcuts:
+
+- Copy selected content and push to cloud clipboard: `python /path/to/windows.py copy --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
+- Pull from cloud clipboard and paste: `python /path/to/windows.py paste --host "https://example.com/" --prefix "prefix" --username "username" --password "password"`
 
 
 
