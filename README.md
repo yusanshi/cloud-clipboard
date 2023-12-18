@@ -56,11 +56,11 @@ This project comes with a public webdis instance for testing. It is **(1) not se
 
 <https://clipboard.yusanshi.com>
 
-This should be usable for all platforms.
-
 The Redis info can be set at the bottom of the webpage. These info are saved in `localStorage` so you only need to input it once for each device.
 
 We use Redis PUB/SUB to notify the changes, so you don't need to refresh the pages to get the latest status.
+
+This should be usable for all platforms. But it requires you to open the webpage and click pulling or pushing button. To save some keystrokes, you can use the following clients for specific platforms. For example, with the Linux/Windows client, you can bind keyboard shortcuts to "copying to cloud" and "pasting from cloud".
 
 ### iOS Shortcuts
 
