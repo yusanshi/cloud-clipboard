@@ -912,12 +912,20 @@
           if (e.currentTarget.contains(e.relatedTarget)) {
             return;
           }
+          if (e.relatedTarget !== null) {
+            // Avoid the textarea affecting the results
+            return;
+          }
           inDocument = true;
           adjustOverlayClass();
           e.preventDefault();
         });
         document.addEventListener('dragleave', (e) => {
           if (e.currentTarget.contains(e.relatedTarget)) {
+            return;
+          }
+          if (e.relatedTarget !== null) {
+            // Avoid the textarea affecting the results
             return;
           }
           inDocument = false;
