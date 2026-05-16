@@ -493,6 +493,13 @@
         return abortController[type].signal;
       }
 
+      function abortRequest(type) {
+        if (abortController[type] !== null) {
+          abortController[type].abort();
+          abortController[type] = null;
+        }
+      }
+
       function Uint8ArrayIndexOf(array, subArray, position = 0) {
         if (
           !(array instanceof Uint8Array) ||
@@ -602,6 +609,7 @@
       }
 
       async function getAndShowCloudClipboard() {
+        show(removeCloudClipboardButton);
         cloudClipboard = await fetchCloudClipboard();
         showClipboard(cloudClipboard, cloudClipboardContainer);
         if (cloudClipboard.type === null) {
@@ -612,6 +620,7 @@
       }
 
       async function getAndShowCloudFile() {
+        show(removeCloudFileButton);
         cloudFile = await fetchCloudFile();
         showFile(cloudFile, cloudFileContainer);
         if (cloudFile.filename === null) {
@@ -703,6 +712,8 @@
 
       async function removeCloudClipboard() {
         log('Begin removing cloud clipboard');
+        abortRequest('clipboard');
+        hide(clipboardProgressBar);
         try {
           await axios.get(
             `${redis.host}DEL/${redis.prefix}:clipboard:type/${redis.prefix}:clipboard:data`
@@ -723,6 +734,8 @@
 
       async function removeCloudFile() {
         log('Begin removing cloud file');
+        abortRequest('file');
+        hide(fileProgressBar);
         try {
           await axios.get(
             `${redis.host}DEL/${redis.prefix}:file:filename/${redis.prefix}:file:data`
